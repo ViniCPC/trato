@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+
+  --color-brand-50: #ecfdf6;
+  --color-brand-100: #d1fae9;
+  --color-brand-300: #6ee7bf;
+  --color-brand-500: #10b985;
+  --color-brand-600: #059670;
+  --color-brand-700: #047857;
+  --color-brand-900: #064e3b;
+
+  --color-web3-50: #f5f3ff;
+  --color-web3-100: #ede9fe;
+  --color-web3-500: #8b5cf6;
+  --color-web3-700: #6d28d9;
+
+  --color-ink-50: #f7f9f8;
+  --color-ink-100: #eef2f0;
+  --color-ink-200: #e2e8e5;
+  --color-ink-400: #94a39d;
+  --color-ink-500: #64746e;
+  --color-ink-700: #334039;
+  --color-ink-900: #0f1a16;
+
+  --radius-card: 0.75rem;
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-ink-200);
+  }
+
+  html {
+    min-width: 320px;
+    background: var(--color-ink-50);
+  }
+
+  body {
+    min-height: 100vh;
+    margin: 0;
+    background: var(--color-ink-50);
+    color: var(--color-ink-900);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--color-brand-500) 35%, transparent);
+    outline-offset: 2px;
+  }
+}
+
+@utility tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
