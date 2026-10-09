@@ -18,20 +18,21 @@ services:
       retries: 10
 
   api:
-    build: .
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: app-api
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      # Dentro da rede do Docker o host é "db", não "localhost"
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-app_db}?schema=public
-      NODE_ENV: development
+      NODE_ENV: production
+      PORT: 3000
     depends_on:
       db:
         condition: service_healthy
-    # Roda as migrations antes de subir a API
-    command: sh -c "npx prisma migrate deploy && node dist/main.js"
+    command: sh -c "npx prisma db migrate --yes && node dist/src/main.js"
 
 volumes:
   postgres_data:
