@@ -1,0 +1,15 @@
+.git
+.github
+.anchor
+.devnet
+target
+frontend
+backend/node_modules
+backend/dist
+backend/coverage
+packages/trato-client/node_modules
+*.log
+**/.env
+**/.env.*
+!.env.solana.example
+!backend/.env.example

@@ -1,0 +1,12 @@
+{
+  "name": "trato-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup:devnet": "node scripts/setup-devnet.ts",
+    "test:client": "npm --prefix packages/trato-client test"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

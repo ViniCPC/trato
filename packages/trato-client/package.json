@@ -1,0 +1,36 @@
+{
+  "name": "@trato/trato-client",
+  "version": "0.1.0",
+  "description": "IDL e helpers canônicos do programa de escrow do Trato",
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    },
+    "./idl": "./idl/trato_escrow.json",
+    "./types": "./types/trato_escrow.ts"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "idl",
+    "types"
+  ],
+  "scripts": {
+    "test": "node --test index.test.js"
+  },
+  "dependencies": {
+    "@solana/web3.js": "3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

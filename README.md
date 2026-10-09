@@ -1,49 +1,84 @@
 # Trato
 
-MVP para organizar projetos entre clientes e freelancers, com etapas e valores protegidos.
+MVP de contratos por etapas entre clientes e freelancers. Valores monetários usam BRLP com 6 casas decimais e sempre atravessam o sistema como inteiros (`bigint`/strings), sem ponto flutuante.
 
-## Stack
+## Componentes
 
-- Frontend: Angular 20 standalone, signals, rotas lazy e Tailwind CSS v4.
-- Backend: NestJS 11, Prisma ORM 8 e PostgreSQL.
-- Testes: Jasmine/Karma no frontend e Jest no backend.
+- `frontend/`: Angular 20 standalone, signals, rotas lazy e Tailwind CSS v4.
+- `backend/`: NestJS 11, Prisma ORM 8 e PostgreSQL.
+- `programs/trato-escrow/`: programa Anchor com escrow SPL por etapa.
+- `packages/trato-client/`: IDL, tipos gerados, PDA e discriminators compartilhados.
+- `scripts/setup-devnet.ts`: setup idempotente do mint BRLP-dev, ATAs e saldos de teste.
 
-## Desenvolvimento
+O frontend nunca monta instruções Solana. A API prepara a transação, a Phantom apenas assina e envia, e a API confirma os efeitos on-chain antes de atualizar o PostgreSQL:
 
-1. Inicie o PostgreSQL com `docker compose up -d db`.
-2. Configure `backend/.env` a partir de `backend/.env.example`.
-3. Em `backend`, execute `npm install` e `npm run start:dev`.
-4. Em `frontend`, execute `npm install` e `npm start`.
-5. Abra `http://localhost:4200`. No modo de desenvolvimento, a API e o Swagger ficam em `http://localhost:3010` e `http://localhost:3010/docs`.
+`prepare → Phantom signAndSendTransaction → confirm → reload do projeto`
 
-Ao iniciar a stack com `docker compose up --build`, a API é publicada em `http://localhost:3000`.
+## Desenvolvimento local
 
-A URL da API do frontend fica em `frontend/src/environments/environment.ts` e no arquivo equivalente de desenvolvimento. A rota `/ui`, disponível apenas na configuração de desenvolvimento, reúne todos os componentes base e seus estados.
+Requisitos: Node 24+, Docker, Rust/Solana/Anchor para o programa.
 
-## Dados de demonstração
+1. Execute `docker compose up -d db`.
+2. Copie `backend/.env.example` para `backend/.env` e defina `DATABASE_URL` e `JWT_SECRET`.
+3. Em `backend/`, rode `npm install`, `npx prisma db migrate --yes`, `npm run seed` e `npm run start:dev`.
+4. Em `frontend/`, rode `npm install` e `npm start`.
+5. Abra `http://localhost:4200`; Swagger fica em `http://localhost:3010/docs`.
 
-Depois de aplicar as migrations ao banco escolhido, execute `npm run seed` dentro de `backend`. O comando é idempotente e prepara projetos nas abas de cliente e freelancer. As contas são `cliente@trato.dev` e `freelancer@trato.dev`, ambas com a senha `trato123`. Por segurança, não use essas credenciais fora de um ambiente de desenvolvimento.
+O driver padrão `ESCROW_DRIVER=mock` não exige RPC ou carteira e mantém o fluxo de demonstração. As contas do seed são `cliente@trato.dev` e `freelancer@trato.dev`, ambas com senha `trato123`.
 
-## Fluxo de projetos
+## Programa e testes
 
-A criação recebe o e-mail de uma conta de freelancer já cadastrada e salva o projeto com todas as etapas em uma única transação. Os valores chegam à API como strings inteiras de base units, com seis casas decimais, evitando aritmética monetária em ponto flutuante.
+O PDA usa `[b"escrow", client, milestone_id]`; cada vault é uma ATA cuja autoridade é o próprio PDA. O programa aceita Token Program clássico ou Token-2022 por `token_interface` e implementa:
 
-O escrow desta fase é um mock. Para testar o fluxo completo em duas abas, entre como cliente e freelancer, crie e ative um projeto e percorra as ações `financiar → entregar → liberar`. Uma etapa financiada também pode seguir pelo caminho de reembolso do cliente.
+- `fund`: cliente cria o escrow e transfere o valor exato;
+- `mark_submitted`: somente o freelancer, partindo de `Funded`;
+- `release`: somente o cliente, em `Funded` ou `Submitted`, transfere ao freelancer e fecha vault/escrow;
+- `refund`: somente o cliente e apenas em `Funded`, devolve e fecha as contas.
 
-## Sessão e segurança
+Rode `cargo test -p trato-escrow` em um ambiente que permita carregar proc-macros Rust. Os testes LiteSVM cobrem o ciclo feliz, liberação antecipada, fechamento e restituição de rent, mint divergente, ator indevido, valor zero, dupla entrega e reembolso após entrega.
 
-O MVP persiste o JWT no `localStorage`. Isso mantém a sessão após recarregar a página, mas deixa o token acessível a JavaScript e, portanto, exposto caso exista uma vulnerabilidade de XSS. A evolução recomendada é mover a sessão para um cookie `httpOnly`, `secure` e `sameSite`, com proteção CSRF adequada. O frontend restaura o usuário por `/me` antes de liberar a navegação e encerra a sessão automaticamente em respostas `401`.
+O build SBF/verificável pode ser reproduzido no Windows sem depender do caminho do OneDrive:
 
-## Comandos de qualidade
+```powershell
+./scripts/verified-build.ps1
+```
 
-No frontend:
+A imagem usada é `solanafoundation/anchor:v1.0.2`, fixada à versão de `Anchor.toml`.
 
-- `npm run build`: compilação de produção.
-- `npm test -- --watch=false --browsers=ChromeHeadless`: testes unitários.
-- `npm run lint`: ESLint para TypeScript e templates Angular.
-- `npm run format`: Prettier com ordenação das classes Tailwind.
+## Devnet
 
-No backend:
+O endereço esperado do programa é `973yrLGt8Jro3ak66GxTyBXBYens5di54txDxJFGJNxG`. O arquivo `target/deploy/trato_escrow-keypair.json` é segredo operacional ignorado pelo Git; guarde um backup seguro antes do primeiro deploy.
 
-- `npm run build`: compilação.
-- `npm test -- --runInBand`: testes unitários.
+1. Copie `.env.solana.example` para `.env.solana` e carregue as variáveis no terminal.
+2. Compile com `anchor build --ignore-keys`.
+3. Financie a autoridade com SOL de devnet.
+4. Faça o deploy:
+
+```powershell
+solana program deploy target/deploy/trato_escrow.so --program-id target/deploy/trato_escrow-keypair.json --keypair $env:DEPLOYER_KEYPAIR --url $env:SOLANA_RPC_URL
+```
+
+5. Crie/configure BRLP-dev e as carteiras de teste:
+
+```powershell
+npm run setup:devnet
+```
+
+O script cria um mint de 6 casas quando necessário, cria ATAs ausentes e só completa cada carteira até `BRLP_TEST_BALANCE`. O resultado local fica em `.devnet/trato.json`; copie o mint para `SOLANA_TOKEN_MINT` no backend. Reexecutar o script não cria outro mint nem duplica o saldo alvo.
+
+Para usar a rede, configure `ESCROW_DRIVER=solana`, `SOLANA_RPC_URL`, `SOLANA_PROGRAM_ID` e `SOLANA_TOKEN_MINT`. O backend falha no boot se a configuração Solana estiver incompleta. `/dev/faucet` existe somente fora de produção, tem limite de uma chamada por minuto por usuário e usa `FAUCET_AUTHORITY_SECRET`.
+
+## Carteira e segurança
+
+A vinculação usa challenge-response: o backend gera uma mensagem com usuário, carteira, nonce e expiração de cinco minutos; a Phantom assina; o backend valida Ed25519 e aceita o desafio uma única vez. Em produção com múltiplas réplicas, mova o armazenamento efêmero de challenges para Redis ou PostgreSQL.
+
+O MVP persiste o JWT no `localStorage`. É um trade-off consciente: o token fica acessível em caso de XSS. A evolução recomendada é cookie `httpOnly`, `secure` e `sameSite`, com proteção CSRF. Nunca versione keypairs, secrets de faucet ou arquivos `.env`.
+
+## Qualidade
+
+- Cliente compartilhado: `npm --prefix packages/trato-client test`.
+- Frontend: `npm run build` e `npm test -- --watch=false --browsers=ChromeHeadless` em `frontend/`.
+- Backend: `npm run build` e `npm test -- --runInBand` em `backend/`.
+- Programa: `cargo test -p trato-escrow` e `anchor build --ignore-keys`.
+
+O Docker da API usa o contexto da raiz para incluir `packages/trato-client`. Antes de `docker compose up --build`, defina `JWT_SECRET` com pelo menos 32 bytes.

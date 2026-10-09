@@ -19,8 +19,8 @@ services:
 
   api:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: app-api
     restart: unless-stopped
     ports:
@@ -29,6 +29,13 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-app_db}?schema=public
       NODE_ENV: production
       PORT: 3000
+      JWT_SECRET: ${JWT_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
+      ESCROW_DRIVER: ${ESCROW_DRIVER:-mock}
+      SOLANA_RPC_URL: ${SOLANA_RPC_URL:-}
+      SOLANA_PROGRAM_ID: ${SOLANA_PROGRAM_ID:-}
+      SOLANA_TOKEN_MINT: ${SOLANA_TOKEN_MINT:-}
+      SOLANA_CLUSTER: ${SOLANA_CLUSTER:-devnet}
     depends_on:
       db:
         condition: service_healthy
