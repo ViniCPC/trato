@@ -3,6 +3,7 @@ import { environment } from '../environments/environment';
 import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
+  { path: '', pathMatch: 'full', redirectTo: 'projects' },
   {
     path: '',
     loadChildren: () => import('./features/auth/auth.routes').then((routes) => routes.AUTH_ROUTES),

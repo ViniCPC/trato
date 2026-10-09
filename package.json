@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "start": "npm --prefix frontend start",
+    "start:frontend": "npm --prefix frontend start",
+    "start:backend": "npm --prefix backend run start:dev",
     "setup:devnet": "node scripts/setup-devnet.ts",
     "test:client": "npm --prefix packages/trato-client test"
   },

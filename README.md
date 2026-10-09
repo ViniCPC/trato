@@ -21,8 +21,12 @@ Requisitos: Node 24+, Docker, Rust/Solana/Anchor para o programa.
 1. Execute `docker compose up -d db`.
 2. Copie `backend/.env.example` para `backend/.env` e defina `DATABASE_URL` e `JWT_SECRET`.
 3. Em `backend/`, rode `npm install`, `npx prisma db migrate --yes`, `npm run seed` e `npm run start:dev`.
-4. Em `frontend/`, rode `npm install` e `npm start`.
-5. Abra `http://localhost:4200`; Swagger fica em `http://localhost:3010/docs`.
+4. Em `frontend/`, rode `npm install` e `npm start`. No PowerShell que bloqueia
+   `npm.ps1`, use `npm.cmd start`.
+5. Abra `http://localhost:4200`; Swagger fica em `http://localhost:3000/docs`.
+
+Depois de instalar as dependências, o frontend também pode ser iniciado na raiz
+do repositório com `npm start` (ou `npm.cmd start` no PowerShell com essa restrição).
 
 O driver padrão `ESCROW_DRIVER=mock` não exige RPC ou carteira e mantém o fluxo de demonstração. As contas do seed são `cliente@trato.dev` e `freelancer@trato.dev`, ambas com senha `trato123`.
 
