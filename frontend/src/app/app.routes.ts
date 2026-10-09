@@ -33,8 +33,8 @@ export const routes: Routes = [
       {
         path: 'wallet',
         loadComponent: () =>
-          import('./features/placeholders/placeholder-page.component').then(
-            (page) => page.PlaceholderPageComponent,
+          import('./features/wallet/pages/wallet-page.component').then(
+            (page) => page.WalletPageComponent,
           ),
         data: {
           pageTitle: 'Carteira',

@@ -9,7 +9,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { finalize, switchMap, tap, timer } from 'rxjs';
+import { finalize, timer } from 'rxjs';
 
 import { ToastService } from '../../../core/services/toast.service';
 import { BrlpPipe } from '../../../shared/pipes/brlp.pipe';
@@ -23,12 +23,10 @@ import {
   MilestoneActionRequest,
   ProjectTimelineComponent,
 } from '../components/project-timeline.component';
-import {
-  TransactionDialogComponent,
-  TransactionStep,
-} from '../components/transaction-dialog.component';
+import { TransactionDialogComponent } from '../components/transaction-dialog.component';
 import { ProjectDetail, ProjectMilestone } from '../models/project.model';
 import { ProjectsApiService } from '../services/projects-api.service';
+import { TransactionFlowService } from '../services/transaction-flow.service';
 import { MILESTONE_ACTION_LABELS } from '../utils/milestone-actions';
 
 interface ConfirmationState {
@@ -278,6 +276,7 @@ export class ProjectDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly transactionFlow = inject(TransactionFlowService);
   private readonly projectId = this.route.snapshot.paramMap.get('id') ?? '';
 
   readonly project = signal<ProjectDetail | null>(null);
@@ -287,7 +286,7 @@ export class ProjectDetailPageComponent {
   readonly confirmation = signal<ConfirmationState | null>(null);
   readonly editOpen = signal(false);
   readonly transactionRequest = signal<MilestoneActionRequest | null>(null);
-  readonly transactionStep = signal<TransactionStep>('preparing');
+  readonly transactionStep = this.transactionFlow.step;
   readonly highlightedMilestoneId = signal<string | null>(null);
   readonly editForm = new FormGroup({
     title: new FormControl('', {
@@ -473,32 +472,19 @@ export class ProjectDetailPageComponent {
     }
     this.confirmation.set(null);
     this.transactionRequest.set(request);
-    this.transactionStep.set('preparing');
-
-    timer(280)
-      .pipe(
-        tap(() => this.transactionStep.set('awaiting_signature')),
-        switchMap(() => timer(420)),
-        tap(() => this.transactionStep.set('confirming')),
-        switchMap(() =>
-          this.api.runMilestoneAction(this.projectId, request.milestone.id, request.action),
-        ),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: () => {
-          this.loadProject(request.milestone.id, () => {
-            this.transactionStep.set('done');
-            this.toast.show('Etapa atualizada', {
-              description: MILESTONE_ACTION_LABELS[request.action],
-              tone: 'success',
-            });
-            timer(1000)
-              .pipe(takeUntilDestroyed(this.destroyRef))
-              .subscribe(() => this.transactionRequest.set(null));
+    void this.transactionFlow
+      .execute(request.milestone, request.action)
+      .then(() => {
+        this.loadProject(request.milestone.id, () => {
+          this.toast.show('Etapa atualizada', {
+            description: MILESTONE_ACTION_LABELS[request.action],
+            tone: 'success',
           });
-        },
-        error: () => this.transactionRequest.set(null),
-      });
+          timer(1000)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(() => this.transactionRequest.set(null));
+        });
+      })
+      .catch(() => this.transactionRequest.set(null));
   }
 }

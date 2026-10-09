@@ -7,6 +7,12 @@ import { AuthResponse, LoginRequest, RegisterRequest, User } from '../models/use
 
 const TOKEN_KEY = 'trato.accessToken';
 
+export interface WalletChallenge {
+  challengeId: string;
+  message: string;
+  expiresAt: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
@@ -52,6 +58,18 @@ export class AuthService {
 
   logout(): void {
     this.clearSession();
+  }
+
+  createWalletChallenge(walletAddress: string): Observable<WalletChallenge> {
+    return this.http.post<WalletChallenge>(`${environment.apiUrl}/me/wallet/challenge`, {
+      walletAddress,
+    });
+  }
+
+  verifyWallet(challengeId: string, signature: string): Observable<User> {
+    return this.http
+      .post<User>(`${environment.apiUrl}/me/wallet/verify`, { challengeId, signature })
+      .pipe(tap((user) => this.currentUserState.set(user)));
   }
 
   clearSession(): void {

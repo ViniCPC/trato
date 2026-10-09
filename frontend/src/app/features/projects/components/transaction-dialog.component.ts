@@ -4,8 +4,7 @@ import { BrlpPipe } from '../../../shared/pipes/brlp.pipe';
 import { DialogComponent } from '../../../shared/ui/dialog/dialog.component';
 import { MilestoneAction, ProjectMilestone } from '../models/project.model';
 import { MILESTONE_ACTION_LABELS } from '../utils/milestone-actions';
-
-export type TransactionStep = 'preparing' | 'awaiting_signature' | 'confirming' | 'done';
+import { TransactionStep } from '../services/transaction-flow.service';
 
 const STEPS: ReadonlyArray<{
   id: TransactionStep;
@@ -20,7 +19,7 @@ const STEPS: ReadonlyArray<{
   {
     id: 'awaiting_signature',
     label: 'Aguardando assinatura',
-    description: 'O mock confirma automaticamente nesta fase.',
+    description: 'Confirme a solicitação na sua carteira.',
   },
   {
     id: 'confirming',

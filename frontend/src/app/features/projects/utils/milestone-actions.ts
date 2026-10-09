@@ -3,7 +3,7 @@ import { MilestoneAction, ProjectMilestone, ProjectRole } from '../models/projec
 const ACTIONS_BY_ROLE = {
   client: {
     pending: ['fund'],
-    funded: ['refund'],
+    funded: ['release', 'refund'],
     submitted: ['release'],
     released: [],
     refunded: [],

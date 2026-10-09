@@ -22,6 +22,7 @@ function milestone(status: MilestoneStatus, sequence: number): ProjectMilestone 
     status,
     escrowAddress: null,
     fundTxSignature: null,
+    submitTxSignature: null,
     releaseTxSignature: null,
     refundTxSignature: null,
     fundedAt: null,
@@ -53,8 +54,8 @@ describe('ProjectTimelineComponent', () => {
     }).compileComponents();
   });
 
-  it('renders fund, refund and release for the client', () => {
-    expect(renderedActions('client')).toEqual(['fund', 'refund', 'release']);
+  it('renders early release, refund and submitted release for the client', () => {
+    expect(renderedActions('client')).toEqual(['fund', 'release', 'refund', 'release']);
   });
 
   it('renders only submit for the freelancer', () => {

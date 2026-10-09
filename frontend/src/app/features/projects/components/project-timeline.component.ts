@@ -6,6 +6,7 @@ import { StatusBadgeComponent } from '../../../shared/ui/status-badge/status-bad
 import { MilestoneAction, ProjectMilestone, ProjectRole } from '../models/project.model';
 import { MILESTONE_ACTION_LABELS, getAvailableActions } from '../utils/milestone-actions';
 import { StatusIconComponent } from './status-icon.component';
+import { environment } from '../../../../environments/environment';
 
 export interface MilestoneActionRequest {
   action: MilestoneAction;
@@ -71,6 +72,19 @@ export interface MilestoneActionRequest {
                 }
               </div>
             </div>
+            @if (transactionLinks(milestone).length) {
+              <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                @for (transaction of transactionLinks(milestone); track transaction.signature) {
+                  <a
+                    class="font-medium text-web3-700 hover:underline"
+                    [href]="explorerUrl(transaction.signature)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >{{ transaction.label }} ↗</a
+                  >
+                }
+              </div>
+            }
           </article>
         </li>
       }
@@ -86,5 +100,23 @@ export class ProjectTimelineComponent {
 
   protected availableActions(milestone: ProjectMilestone): readonly MilestoneAction[] {
     return getAvailableActions(milestone, this.role());
+  }
+
+  protected transactionLinks(
+    milestone: ProjectMilestone,
+  ): ReadonlyArray<{ label: string; signature: string }> {
+    return [
+      { label: 'Financiamento', signature: milestone.fundTxSignature },
+      { label: 'Entrega', signature: milestone.submitTxSignature },
+      { label: 'Liberação', signature: milestone.releaseTxSignature },
+      { label: 'Reembolso', signature: milestone.refundTxSignature },
+    ].filter(
+      (transaction): transaction is { label: string; signature: string } =>
+        transaction.signature !== null && !transaction.signature.startsWith('mock_'),
+    );
+  }
+
+  protected explorerUrl(signature: string): string {
+    return `https://explorer.solana.com/tx/${encodeURIComponent(signature)}?cluster=${environment.solanaCluster}`;
   }
 }

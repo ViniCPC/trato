@@ -40,6 +40,7 @@ export interface ProjectMilestone {
   status: MilestoneStatus;
   escrowAddress: string | null;
   fundTxSignature: string | null;
+  submitTxSignature: string | null;
   releaseTxSignature: string | null;
   refundTxSignature: string | null;
   fundedAt: string | null;
@@ -92,4 +93,16 @@ export interface CreateProjectResponse {
 export interface UpdateProjectRequest {
   title?: string;
   description?: string;
+}
+
+export interface PreparedEscrowTransaction {
+  driver: 'mock' | 'solana';
+  transactionBase64: string | null;
+  mockSignature: string | null;
+  escrowAddress: string;
+  lastValidBlockHeight: string | null;
+}
+
+export interface ConfirmedEscrowTransaction extends ProjectMilestone {
+  signature: string;
 }

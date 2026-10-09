@@ -8,7 +8,7 @@ describe('getAvailableActions', () => {
     expected: readonly MilestoneAction[];
   }> = [
     { role: 'client', status: 'pending', expected: ['fund'] },
-    { role: 'client', status: 'funded', expected: ['refund'] },
+    { role: 'client', status: 'funded', expected: ['release', 'refund'] },
     { role: 'client', status: 'submitted', expected: ['release'] },
     { role: 'client', status: 'released', expected: [] },
     { role: 'client', status: 'refunded', expected: [] },

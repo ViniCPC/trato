@@ -9,6 +9,8 @@ import {
   ProjectDetail,
   ProjectListResponse,
   ProjectRole,
+  PreparedEscrowTransaction,
+  ConfirmedEscrowTransaction,
   UpdateProjectRequest,
 } from '../models/project.model';
 
@@ -50,14 +52,24 @@ export class ProjectsApiService {
     return this.http.delete<void>(`${environment.apiUrl}/projects/${projectId}`);
   }
 
-  runMilestoneAction(
-    projectId: string,
+  prepareMilestoneAction(
     milestoneId: string,
     action: MilestoneAction,
-  ): Observable<void> {
-    return this.http.post<void>(
-      `${environment.apiUrl}/projects/${projectId}/milestones/${milestoneId}/${action}`,
+  ): Observable<PreparedEscrowTransaction> {
+    return this.http.post<PreparedEscrowTransaction>(
+      `${environment.apiUrl}/milestones/${milestoneId}/${action}/prepare`,
       {},
+    );
+  }
+
+  confirmMilestoneAction(
+    milestoneId: string,
+    action: MilestoneAction,
+    signature: string,
+  ): Observable<ConfirmedEscrowTransaction> {
+    return this.http.post<ConfirmedEscrowTransaction>(
+      `${environment.apiUrl}/milestones/${milestoneId}/${action}/confirm`,
+      { signature },
     );
   }
 }
