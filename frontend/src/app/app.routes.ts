@@ -3,7 +3,13 @@ import { environment } from '../environments/environment';
 import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'projects' },
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () =>
+      import('./features/landing/landing-page.component').then((page) => page.LandingPageComponent),
+    title: 'Trato: pagamento por etapas para freelancers',
+  },
   {
     path: '',
     loadChildren: () => import('./features/auth/auth.routes').then((routes) => routes.AUTH_ROUTES),

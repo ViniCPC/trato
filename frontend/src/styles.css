@@ -1,32 +1,65 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
 @import 'tailwindcss';
 
 @theme {
+  --font-display: 'Bricolage Grotesque', 'Geist', ui-sans-serif, system-ui, sans-serif;
   --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, monospace;
 
   --color-brand-50: #ecfdf6;
   --color-brand-100: #d1fae9;
+  --color-brand-200: #a7f3d4;
   --color-brand-300: #6ee7bf;
+  --color-brand-400: #34d39a;
   --color-brand-500: #10b985;
   --color-brand-600: #059670;
   --color-brand-700: #047857;
+  --color-brand-800: #065f46;
   --color-brand-900: #064e3b;
+  --color-brand-950: #022c22;
 
   --color-web3-50: #f5f3ff;
   --color-web3-100: #ede9fe;
+  --color-web3-200: #ddd6fe;
+  --color-web3-300: #c4b5fd;
+  --color-web3-400: #a78bfa;
   --color-web3-500: #8b5cf6;
+  --color-web3-600: #7c3aed;
   --color-web3-700: #6d28d9;
+  --color-web3-800: #5b21b6;
+  --color-web3-900: #4c1d95;
 
   --color-ink-50: #f7f9f8;
   --color-ink-100: #eef2f0;
   --color-ink-200: #e2e8e5;
+  --color-ink-300: #c5cfca;
   --color-ink-400: #94a39d;
   --color-ink-500: #64746e;
+  --color-ink-600: #4a5852;
   --color-ink-700: #334039;
+  --color-ink-800: #1f2a25;
   --color-ink-900: #0f1a16;
+  --color-ink-950: #08100d;
 
   --radius-card: 0.75rem;
+  --shadow-float:
+    0 1px 2px rgb(15 26 22 / 0.06), 0 12px 24px -8px rgb(15 26 22 / 0.1),
+    0 32px 64px -24px rgb(15 26 22 / 0.22);
+}
+
+@utility container-page {
+  width: 100%;
+  max-width: 76rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+
+  @variant sm {
+    padding-inline: 1.5rem;
+  }
+
+  @variant lg {
+    padding-inline: 2rem;
+  }
 }
 
 @layer base {
@@ -39,11 +72,13 @@
   html {
     min-width: 320px;
     background: var(--color-ink-50);
+    scroll-behavior: smooth;
   }
 
   body {
     min-height: 100vh;
     margin: 0;
+    overflow-x: hidden;
     background: var(--color-ink-50);
     color: var(--color-ink-900);
     font-family: var(--font-sans);
@@ -60,9 +95,34 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  section[id] {
+    scroll-margin-top: 5rem;
+  }
+
   :focus-visible {
     outline: 3px solid color-mix(in srgb, var(--color-brand-500) 35%, transparent);
     outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    ::before,
+    ::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
