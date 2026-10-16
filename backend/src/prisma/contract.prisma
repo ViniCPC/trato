@@ -1,0 +1,107 @@
+// use prisma-8
+
+enum ProjectStatus {
+  @@type("pg/text@1")
+
+  DRAFT     = "draft"
+  ACTIVE    = "active"
+  COMPLETED = "completed"
+  CANCELLED = "cancelled"
+}
+
+enum MilestoneStatus {
+  @@type("pg/text@1")
+
+  PENDING   = "pending"
+  FUNDED    = "funded"
+  SUBMITTED = "submitted"
+  RELEASED  = "released"
+  REFUNDED  = "refunded"
+}
+
+model User {
+  id            Uuid    @id @default(uuid())
+  name          String
+  email         String  @unique
+  passwordHash  String
+  walletAddress String? @unique
+
+  clientProjects     Project[] @relation("ProjectClient")
+  freelancerProjects Project[] @relation("ProjectFreelancer")
+
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.updatedAtString()
+
+  @@map("users")
+}
+
+model Project {
+  id          Uuid          @id @default(uuid())
+  title       String
+  description String?
+  status      ProjectStatus @default(DRAFT)
+
+  clientId Uuid
+  client   User @relation("ProjectClient", fields: [clientId], references: [id], onDelete: Restrict)
+
+  freelancerId Uuid
+  freelancer   User @relation("ProjectFreelancer", fields: [freelancerId], references: [id], onDelete: Restrict)
+
+  milestones Milestone[]
+
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.updatedAtString()
+
+  @@index([clientId, status])
+  @@index([freelancerId, status])
+
+  @@map("projects")
+}
+
+model Milestone {
+  id Uuid @id @default(uuid())
+
+  projectId Uuid
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  sequence    Int
+  title       String
+  description String?
+
+  amountBaseUnits BigInt
+  status          MilestoneStatus @default(PENDING)
+
+  escrowAddress      String? @unique
+  fundTxSignature    String? @unique
+  submitTxSignature  String? @unique
+  releaseTxSignature String? @unique
+  refundTxSignature  String? @unique
+
+  fundedAt    TimestamptzString?
+  submittedAt TimestamptzString?
+  releasedAt  TimestamptzString?
+
+  confirmations EscrowConfirmation[]
+
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.updatedAtString()
+
+  @@unique([projectId, sequence])
+  @@index([projectId, status])
+
+  @@map("milestones")
+}
+
+model EscrowConfirmation {
+  id Uuid @id @default(uuid())
+
+  milestoneId Uuid
+  milestone   Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+
+  action    String
+  signature String @unique
+  createdAt TimestamptzString @default(now())
+
+  @@unique([milestoneId, action])
+  @@map("escrow_confirmations")
+}

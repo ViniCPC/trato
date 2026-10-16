@@ -1,0 +1,290 @@
+[
+  {
+    "id": "table.escrow_confirmations",
+    "label": "Create table \"escrow_confirmations\"",
+    "summary": "Creates table \"escrow_confirmations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "escrow_confirmations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"escrow_confirmations\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"escrow_confirmations\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"escrow_confirmations\"",
+        "sql": "CREATE TABLE \"public\".\"escrow_confirmations\" (\n  \"action\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"milestoneId\" uuid NOT NULL,\n  \"signature\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"escrow_confirmations\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"escrow_confirmations\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.milestones.submitTxSignature",
+    "label": "Add column \"submitTxSignature\" to \"milestones\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "submitTxSignature",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"submitTxSignature\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "submitTxSignature"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"submitTxSignature\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" ADD COLUMN \"submitTxSignature\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"submitTxSignature\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "submitTxSignature"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.escrow_confirmations.escrow_confirmations_signature_key",
+    "label": "Add unique constraint on \"escrow_confirmations\" (signature)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "escrow_confirmations_signature_key",
+        "table": "escrow_confirmations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"escrow_confirmations_signature_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "escrow_confirmations_signature_key",
+          "public",
+          "\"public\".\"escrow_confirmations\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"escrow_confirmations_signature_key\"",
+        "sql": "ALTER TABLE \"public\".\"escrow_confirmations\" ADD CONSTRAINT \"escrow_confirmations_signature_key\" UNIQUE (\"signature\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"escrow_confirmations_signature_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "escrow_confirmations_signature_key",
+          "public",
+          "\"public\".\"escrow_confirmations\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.escrow_confirmations.escrow_confirmations_milestoneId_action_key",
+    "label": "Add unique constraint on \"escrow_confirmations\" (milestoneId, action)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "escrow_confirmations_milestoneId_action_key",
+        "table": "escrow_confirmations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"escrow_confirmations_milestoneId_action_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "escrow_confirmations_milestoneId_action_key",
+          "public",
+          "\"public\".\"escrow_confirmations\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"escrow_confirmations_milestoneId_action_key\"",
+        "sql": "ALTER TABLE \"public\".\"escrow_confirmations\" ADD CONSTRAINT \"escrow_confirmations_milestoneId_action_key\" UNIQUE (\"milestoneId\", \"action\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"escrow_confirmations_milestoneId_action_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "escrow_confirmations_milestoneId_action_key",
+          "public",
+          "\"public\".\"escrow_confirmations\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.milestones.milestones_submitTxSignature_key",
+    "label": "Add unique constraint on \"milestones\" (submitTxSignature)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "milestones_submitTxSignature_key",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"milestones_submitTxSignature_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_submitTxSignature_key",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"milestones_submitTxSignature_key\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" ADD CONSTRAINT \"milestones_submitTxSignature_key\" UNIQUE (\"submitTxSignature\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"milestones_submitTxSignature_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_submitTxSignature_key",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.escrow_confirmations.escrow_confirmations_milestoneId_idx_f1dac854",
+    "label": "Create index \"escrow_confirmations_milestoneId_idx_f1dac854\" on \"escrow_confirmations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "escrow_confirmations_milestoneId_idx_f1dac854",
+        "table": "escrow_confirmations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"escrow_confirmations_milestoneId_idx_f1dac854\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"escrow_confirmations_milestoneId_idx_f1dac854\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"escrow_confirmations_milestoneId_idx_f1dac854\"",
+        "sql": "CREATE INDEX \"escrow_confirmations_milestoneId_idx_f1dac854\" ON \"public\".\"escrow_confirmations\" (\"milestoneId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"escrow_confirmations_milestoneId_idx_f1dac854\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"escrow_confirmations_milestoneId_idx_f1dac854\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.escrow_confirmations.escrow_confirmations_milestoneId_fkey",
+    "label": "Add foreign key \"escrow_confirmations_milestoneId_fkey\" on \"escrow_confirmations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "escrow_confirmations_milestoneId_fkey",
+        "table": "escrow_confirmations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"escrow_confirmations_milestoneId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "escrow_confirmations_milestoneId_fkey",
+          "public",
+          "\"public\".\"escrow_confirmations\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"escrow_confirmations_milestoneId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"escrow_confirmations\"\nADD CONSTRAINT \"escrow_confirmations_milestoneId_fkey\"\nFOREIGN KEY (\"milestoneId\")\nREFERENCES \"public\".\"milestones\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"escrow_confirmations_milestoneId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "escrow_confirmations_milestoneId_fkey",
+          "public",
+          "\"public\".\"escrow_confirmations\""
+        ]
+      }
+    ]
+  }
+]

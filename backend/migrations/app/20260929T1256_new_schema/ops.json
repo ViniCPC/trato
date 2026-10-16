@@ -1,0 +1,890 @@
+[
+  {
+    "id": "column.public.users.walletAddress",
+    "label": "Add column \"walletAddress\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "walletAddress",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"walletAddress\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "walletAddress"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"walletAddress\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"walletAddress\" character varying(64)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"walletAddress\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "walletAddress"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.users.users_walletAddress_key",
+    "label": "Add unique constraint on \"users\" (walletAddress)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "users_walletAddress_key",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"users_walletAddress_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_walletAddress_key",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"users_walletAddress_key\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD CONSTRAINT \"users_walletAddress_key\" UNIQUE (\"walletAddress\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"users_walletAddress_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_walletAddress_key",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.projects.freelancerId",
+    "label": "Set NOT NULL on \"projects\".\"freelancerId\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "freelancerId",
+        "table": "projects"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"freelancerId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "projects",
+          "freelancerId"
+        ]
+      },
+      {
+        "description": "ensure no NULL values in \"freelancerId\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"projects\" WHERE \"freelancerId\" IS NULL) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"freelancerId\"",
+        "sql": "ALTER TABLE \"public\".\"projects\" ALTER COLUMN \"freelancerId\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"freelancerId\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "projects",
+          "freelancerId",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.projects.agreedTotalBrlCents",
+    "label": "Drop column \"agreedTotalBrlCents\" from \"projects\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "agreedTotalBrlCents",
+        "table": "projects"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"agreedTotalBrlCents\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "projects",
+          "agreedTotalBrlCents"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"agreedTotalBrlCents\"",
+        "sql": "ALTER TABLE \"public\".\"projects\" DROP COLUMN \"agreedTotalBrlCents\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"agreedTotalBrlCents\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "projects",
+          "agreedTotalBrlCents"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.milestones.amountBaseUnits",
+    "label": "Add column \"amountBaseUnits\" to \"milestones\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "amountBaseUnits",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"amountBaseUnits\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "amountBaseUnits"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"amountBaseUnits\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" ADD COLUMN \"amountBaseUnits\" int8 NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"amountBaseUnits\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "amountBaseUnits"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.milestones.amountBrlCents",
+    "label": "Drop column \"amountBrlCents\" from \"milestones\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "amountBrlCents",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"amountBrlCents\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "amountBrlCents"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"amountBrlCents\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" DROP COLUMN \"amountBrlCents\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"amountBrlCents\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "amountBrlCents"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.milestones.escrowAddress",
+    "label": "Add column \"escrowAddress\" to \"milestones\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "escrowAddress",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"escrowAddress\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "escrowAddress"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"escrowAddress\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" ADD COLUMN \"escrowAddress\" character varying(64)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"escrowAddress\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "escrowAddress"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.milestones.fundTxSignature",
+    "label": "Add column \"fundTxSignature\" to \"milestones\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "fundTxSignature",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"fundTxSignature\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "fundTxSignature"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"fundTxSignature\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" ADD COLUMN \"fundTxSignature\" character varying(128)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"fundTxSignature\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "fundTxSignature"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.milestones.refundTxSignature",
+    "label": "Add column \"refundTxSignature\" to \"milestones\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "refundTxSignature",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"refundTxSignature\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "refundTxSignature"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"refundTxSignature\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" ADD COLUMN \"refundTxSignature\" character varying(128)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"refundTxSignature\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "refundTxSignature"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.milestones.releaseTxSignature",
+    "label": "Add column \"releaseTxSignature\" to \"milestones\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "releaseTxSignature",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"releaseTxSignature\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "releaseTxSignature"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"releaseTxSignature\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" ADD COLUMN \"releaseTxSignature\" character varying(128)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"releaseTxSignature\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "releaseTxSignature"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.milestones.fundedAt",
+    "label": "Add column \"fundedAt\" to \"milestones\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "fundedAt",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"fundedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "fundedAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"fundedAt\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" ADD COLUMN \"fundedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"fundedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "fundedAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropDefault.milestones.status",
+    "label": "Drop default on \"milestones\".\"status\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "status",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"status\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "status"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop default on \"status\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" ALTER COLUMN \"status\" DROP DEFAULT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"status\" has no default",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"column_default\" IS NULL)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "status"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "setDefault.milestones.status",
+    "label": "Set default on \"milestones\".\"status\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "status",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"status\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "status"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "set default on \"status\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" ALTER COLUMN \"status\" SET DEFAULT 'pending'"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"status\" has a default",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"column_default\" IS NOT NULL)) AS \"result\"",
+        "params": [
+          "public",
+          "milestones",
+          "status"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropCheckConstraint.milestones.milestones_status_check_4efd7878",
+    "label": "Drop check constraint \"milestones_status_check_4efd7878\" on \"milestones\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "milestones_status_check_4efd7878",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"milestones_status_check_4efd7878\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_status_check_4efd7878",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"milestones_status_check_4efd7878\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" DROP CONSTRAINT \"milestones_status_check_4efd7878\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"milestones_status_check_4efd7878\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_status_check_4efd7878",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.milestones.milestones_status_check_64ed4d4c",
+    "label": "Add check constraint \"milestones_status_check_64ed4d4c\" on \"milestones\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "milestones_status_check_64ed4d4c",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"milestones_status_check_64ed4d4c\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_status_check_64ed4d4c",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"milestones_status_check_64ed4d4c\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" ADD CONSTRAINT \"milestones_status_check_64ed4d4c\" CHECK (\"status\" IN ('pending', 'funded', 'submitted', 'released', 'refunded'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"milestones_status_check_64ed4d4c\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_status_check_64ed4d4c",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropConstraint.milestones.milestones_projectId_fkey",
+    "label": "Drop constraint \"milestones_projectId_fkey\" on \"milestones\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "milestones_projectId_fkey",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"milestones_projectId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_projectId_fkey",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"milestones_projectId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" DROP CONSTRAINT \"milestones_projectId_fkey\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"milestones_projectId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_projectId_fkey",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.milestones.milestones_projectId_fkey",
+    "label": "Add foreign key \"milestones_projectId_fkey\" on \"milestones\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "milestones_projectId_fkey",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"milestones_projectId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_projectId_fkey",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"milestones_projectId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\"\nADD CONSTRAINT \"milestones_projectId_fkey\"\nFOREIGN KEY (\"projectId\")\nREFERENCES \"public\".\"projects\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"milestones_projectId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_projectId_fkey",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.milestones.milestones_escrowAddress_key",
+    "label": "Add unique constraint on \"milestones\" (escrowAddress)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "milestones_escrowAddress_key",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"milestones_escrowAddress_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_escrowAddress_key",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"milestones_escrowAddress_key\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" ADD CONSTRAINT \"milestones_escrowAddress_key\" UNIQUE (\"escrowAddress\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"milestones_escrowAddress_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_escrowAddress_key",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.milestones.milestones_fundTxSignature_key",
+    "label": "Add unique constraint on \"milestones\" (fundTxSignature)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "milestones_fundTxSignature_key",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"milestones_fundTxSignature_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_fundTxSignature_key",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"milestones_fundTxSignature_key\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" ADD CONSTRAINT \"milestones_fundTxSignature_key\" UNIQUE (\"fundTxSignature\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"milestones_fundTxSignature_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_fundTxSignature_key",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.milestones.milestones_releaseTxSignature_key",
+    "label": "Add unique constraint on \"milestones\" (releaseTxSignature)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "milestones_releaseTxSignature_key",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"milestones_releaseTxSignature_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_releaseTxSignature_key",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"milestones_releaseTxSignature_key\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" ADD CONSTRAINT \"milestones_releaseTxSignature_key\" UNIQUE (\"releaseTxSignature\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"milestones_releaseTxSignature_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_releaseTxSignature_key",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.milestones.milestones_refundTxSignature_key",
+    "label": "Add unique constraint on \"milestones\" (refundTxSignature)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "milestones_refundTxSignature_key",
+        "table": "milestones"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"milestones_refundTxSignature_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_refundTxSignature_key",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"milestones_refundTxSignature_key\"",
+        "sql": "ALTER TABLE \"public\".\"milestones\" ADD CONSTRAINT \"milestones_refundTxSignature_key\" UNIQUE (\"refundTxSignature\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"milestones_refundTxSignature_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "milestones_refundTxSignature_key",
+          "public",
+          "\"public\".\"milestones\""
+        ]
+      }
+    ]
+  }
+]
