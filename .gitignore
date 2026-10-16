@@ -1,10 +1,10 @@
 /target/
 /.anchor/
-/.env
-/devnet.json
+.env
+devnet.json
 /.devnet/
 .env.solana
 *.keypair.json
 **/node_modules/
 **/dist/
-/backend/
+
