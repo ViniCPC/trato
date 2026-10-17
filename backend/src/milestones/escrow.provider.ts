@@ -29,6 +29,11 @@ export interface ConfirmedEscrowTransaction {
   escrowAddress: string;
 }
 
+export interface EscrowSyncAction {
+  action: 'submit' | 'release' | 'refund';
+  signature: string;
+}
+
 export interface EscrowProvider {
   prepare(
     action: EscrowAction,
@@ -39,6 +44,10 @@ export interface EscrowProvider {
     signature: string,
     context: EscrowContext,
   ): Promise<ConfirmedEscrowTransaction>;
+  findUnconfirmedAction(
+    context: EscrowContext,
+    status: 'funded' | 'submitted',
+  ): Promise<EscrowSyncAction | null>;
 }
 
 export class TransactionPendingError extends HttpException {

@@ -27,10 +27,14 @@ import type {
   EscrowAction,
   EscrowContext,
   EscrowProvider,
+  EscrowSyncAction,
   PreparedEscrowTransaction,
 } from './escrow.provider';
 import { TransactionPendingError } from './escrow.provider';
-import { validateTransactionEvidence } from './solana-confirmation';
+import {
+  hasExactTokenCredit,
+  validateTransactionEvidence,
+} from './solana-confirmation';
 
 const TOKEN_PROGRAM_ID = new PublicKey(
   'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
@@ -45,6 +49,15 @@ const ACTION_STATUS = {
   release: 'released',
   refund: 'refunded',
 } as const;
+
+const ESCROW_ACCOUNT_INDEX = {
+  fund: 4,
+  submit: 1,
+  release: 3,
+  refund: 2,
+} as const;
+
+const FREELANCER_TOKEN_ACCOUNT_INDEX = 5;
 
 @Injectable()
 export class SolanaEscrowProvider implements EscrowProvider {
@@ -76,12 +89,12 @@ export class SolanaEscrowProvider implements EscrowProvider {
     const client = new PublicKey(context.clientWallet);
     const freelancer = new PublicKey(context.freelancerWallet);
     const actor = new PublicKey(context.actorWallet);
-    const [escrow] = await findEscrowPda(
-      client,
-      context.milestoneId,
-      this.programId,
-    );
+    const escrow = await this.deriveEscrow(client, context.milestoneId);
     this.assertStoredEscrow(context.escrowAddress, escrow, action);
+
+    if (action === 'submit') {
+      await this.assertEscrowState('fund', escrow, context);
+    }
 
     const instruction = await this.buildInstruction(
       action,
@@ -117,15 +130,11 @@ export class SolanaEscrowProvider implements EscrowProvider {
     context: EscrowContext,
   ): Promise<ConfirmedEscrowTransaction> {
     const client = new PublicKey(context.clientWallet);
-    const [escrow] = await findEscrowPda(
-      client,
-      context.milestoneId,
-      this.programId,
-    );
+    const escrow = await this.deriveEscrow(client, context.milestoneId);
     this.assertStoredEscrow(context.escrowAddress, escrow, action);
     const response = await this.findConfirmedTransaction(signature);
 
-    this.assertTransaction(response, action, context.actorWallet);
+    await this.assertTransaction(response, action, context, escrow);
     await this.assertEscrowState(action, escrow, context);
 
     return {
@@ -133,6 +142,80 @@ export class SolanaEscrowProvider implements EscrowProvider {
       status: ACTION_STATUS[action],
       escrowAddress: escrow.toBase58(),
     };
+  }
+
+  async findUnconfirmedAction(
+    context: EscrowContext,
+    status: 'funded' | 'submitted',
+  ): Promise<EscrowSyncAction | null> {
+    const escrow = await this.deriveEscrow(
+      new PublicKey(context.clientWallet),
+      context.milestoneId,
+    );
+    this.assertStoredEscrow(context.escrowAddress, escrow, 'submit');
+
+    const account = await this.connection.getAccountInfo(escrow, 'confirmed');
+    let possibleActions: readonly EscrowSyncAction['action'][];
+    if (account) {
+      const chainStatus = Buffer.from(account.data)[128];
+      if (chainStatus !== 0 && chainStatus !== 1) {
+        throw new ConflictException('Estado on-chain do escrow inválido');
+      }
+      await this.assertEscrowState(
+        chainStatus === 0 ? 'fund' : 'submit',
+        escrow,
+        context,
+      );
+      if (chainStatus === 0 && status === 'funded') return null;
+      if (chainStatus === 1 && status === 'submitted') return null;
+      if (chainStatus === 0) {
+        throw new ConflictException('O banco está à frente do escrow on-chain');
+      }
+      possibleActions = ['submit'];
+    } else {
+      possibleActions =
+        status === 'funded' ? ['release', 'refund'] : ['release'];
+    }
+
+    try {
+      const signatures = await this.connection.getSignaturesForAddress(
+        escrow,
+        { limit: 1000 },
+        'confirmed',
+      );
+      for (const entry of signatures) {
+        if (entry.err) continue;
+        const response = await this.connection.getTransaction(entry.signature, {
+          commitment: 'confirmed',
+        });
+        if (!response) continue;
+        for (const action of possibleActions) {
+          const actorWallet =
+            action === 'submit'
+              ? context.freelancerWallet
+              : context.clientWallet;
+          try {
+            await this.assertTransaction(
+              response,
+              action,
+              { ...context, actorWallet },
+              escrow,
+            );
+            return { action, signature: entry.signature };
+          } catch (error) {
+            if (!(error instanceof ConflictException)) throw error;
+          }
+        }
+      }
+    } catch (error) {
+      if (error instanceof ConflictException) throw error;
+      throw new BadGatewayException('Falha ao consultar o RPC da Solana', {
+        cause: error,
+      });
+    }
+    throw new ConflictException(
+      'O escrow mudou on-chain, mas a transação correspondente não foi encontrada; informe a assinatura para confirmar',
+    );
   }
 
   private async buildInstruction(
@@ -225,6 +308,19 @@ export class SolanaEscrowProvider implements EscrowProvider {
     return address;
   }
 
+  private async deriveEscrow(
+    client: PublicKey,
+    milestoneId: string,
+  ): Promise<PublicKey> {
+    // The local client package can load a separate copy of web3.js.
+    const [address] = await findEscrowPda(
+      client.toBase58(),
+      milestoneId,
+      this.programId.toBase58(),
+    );
+    return new PublicKey(address.toBase58());
+  }
+
   private encodeU64(value: bigint): Buffer {
     if (value <= 0n || value > 18_446_744_073_709_551_615n) {
       throw new ConflictException('Valor fora do intervalo u64');
@@ -255,11 +351,12 @@ export class SolanaEscrowProvider implements EscrowProvider {
     throw new TransactionPendingError();
   }
 
-  private assertTransaction(
+  private async assertTransaction(
     response: TransactionResponse,
     action: EscrowAction,
-    actorWallet: string,
-  ): void {
+    context: EscrowContext,
+    escrow: PublicKey,
+  ): Promise<void> {
     const message = response.transaction.message;
     const requiredSigners = message.accountKeys
       .slice(0, message.header.numRequiredSignatures)
@@ -269,19 +366,24 @@ export class SolanaEscrowProvider implements EscrowProvider {
     );
     const failure = validateTransactionEvidence(
       {
-        failed: Boolean(response.meta?.err),
+        failed: !response.meta || Boolean(response.meta.err),
         requiredSigners,
         instructions: message.instructions.map((instruction) => ({
           programId: String(
             message.accountKeys[instruction.programIdIndex]?.toBase58() ?? '',
           ),
           data: bs58.decode(instruction.data),
+          accounts: instruction.accounts.map(
+            (index) => message.accountKeys[index]?.toBase58() ?? '',
+          ),
         })),
       },
       {
-        actorWallet,
+        actorWallet: context.actorWallet,
         programId: String(this.programId.toBase58()),
         discriminator: expectedDiscriminator,
+        escrowAddress: escrow.toBase58(),
+        escrowAccountIndex: ESCROW_ACCOUNT_INDEX[action],
       },
     );
     if (failure) {
@@ -291,6 +393,43 @@ export class SolanaEscrowProvider implements EscrowProvider {
         WRONG_INSTRUCTION: 'A instrução esperada não está na transação',
       } as const;
       throw new ConflictException(messageByFailure[failure]);
+    }
+
+    if (action === 'release') {
+      const recipient = await this.findAssociatedTokenAddress(
+        new PublicKey(context.freelancerWallet),
+      );
+      const accountIndex = message.accountKeys.findIndex((key) =>
+        key.equals(recipient),
+      );
+      if (
+        accountIndex < 0 ||
+        !message.instructions.some(
+          (instruction) =>
+            message.accountKeys[instruction.programIdIndex]?.equals(
+              this.programId,
+            ) &&
+            Buffer.from(bs58.decode(instruction.data))
+              .subarray(0, expectedDiscriminator.length)
+              .equals(expectedDiscriminator) &&
+            message.accountKeys[
+              instruction.accounts[ESCROW_ACCOUNT_INDEX.release]
+            ]?.equals(escrow) &&
+            instruction.accounts[FREELANCER_TOKEN_ACCOUNT_INDEX] ===
+              accountIndex,
+        ) ||
+        !hasExactTokenCredit(
+          response.meta?.preTokenBalances,
+          response.meta?.postTokenBalances,
+          accountIndex,
+          this.mint.toBase58(),
+          context.amountBaseUnits,
+        )
+      ) {
+        throw new ConflictException(
+          'O freelancer não recebeu o valor exato nesta transação',
+        );
+      }
     }
   }
 
@@ -305,11 +444,12 @@ export class SolanaEscrowProvider implements EscrowProvider {
         throw new ConflictException('O escrow deveria estar encerrado');
       return;
     }
-    if (
-      !account ||
-      !account.owner.equals(this.programId) ||
-      account.data.length < 130
-    ) {
+    if (!account) {
+      throw new ConflictException(
+        'Escrow não encontrado on-chain; sincronize a etapa antes de continuar',
+      );
+    }
+    if (!account.owner.equals(this.programId) || account.data.length < 130) {
       throw new ConflictException('Conta de escrow ausente ou inválida');
     }
 

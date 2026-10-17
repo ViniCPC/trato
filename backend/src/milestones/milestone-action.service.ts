@@ -71,6 +71,26 @@ export class MilestoneActionService {
     return this.escrow.prepare(action, record.context);
   }
 
+  async sync(milestoneId: string, userId: string) {
+    const record = await this.loadActionRecord(milestoneId, userId, true);
+    if (
+      record.milestone.status !== 'funded' &&
+      record.milestone.status !== 'submitted'
+    ) {
+      return this.toResponse(record.milestone);
+    }
+    const found = await this.escrow.findUnconfirmedAction(
+      record.context,
+      record.milestone.status,
+    );
+    if (!found) return this.toResponse(record.milestone);
+    const actorId =
+      found.action === 'submit'
+        ? record.project.freelancerId
+        : record.project.clientId;
+    return this.confirm(milestoneId, actorId, found.action, found.signature);
+  }
+
   async confirm(
     milestoneId: string,
     userId: string,
@@ -275,9 +295,15 @@ export class MilestoneActionService {
     signature: string,
   ) {
     return {
+      ...this.toResponse(milestone),
+      signature,
+    };
+  }
+
+  private toResponse<T extends { amountBaseUnits: bigint }>(milestone: T) {
+    return {
       ...milestone,
       amountBaseUnits: milestone.amountBaseUnits.toString(),
-      signature,
     };
   }
 }

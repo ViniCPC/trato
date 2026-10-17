@@ -162,16 +162,63 @@ export class AuthService {
 
     challenge.used = true;
     try {
-      const user = await this.prisma.orm.public.User.select(
-        'id',
-        'name',
-        'email',
-        'walletAddress',
-        'createdAt',
-        'updatedAt',
-      )
-        .where({ id: userId })
-        .update({ walletAddress: challenge.walletAddress });
+      const user = await this.prisma.db.transaction(async (tx) => {
+        const lockQuery = this.prisma.db.raw.sql`
+          SELECT "id" FROM "public"."users"
+          WHERE "id" = CAST(${userId} AS uuid)
+          FOR UPDATE
+        `
+          .returnsRow({ id: tx.sql.public.users.columns.id })
+          .build();
+        await tx.query(lockQuery);
+
+        const current = await tx.orm.public.User.where({ id: userId }).first();
+        if (!current) throw new UnauthorizedException();
+        if (
+          current.walletAddress &&
+          current.walletAddress !== challenge.walletAddress
+        ) {
+          const clientProjects = await tx.orm.public.Project.where({
+            clientId: userId,
+          })
+            .select('id')
+            .all();
+          const freelancerProjects = await tx.orm.public.Project.where({
+            freelancerId: userId,
+          })
+            .select('id')
+            .all();
+          for (const project of [...clientProjects, ...freelancerProjects]) {
+            const milestones = await tx.orm.public.Milestone.where({
+              projectId: project.id,
+            })
+              .select('status')
+              .all();
+            if (
+              milestones.some(
+                (milestone) =>
+                  milestone.status === 'funded' ||
+                  milestone.status === 'submitted',
+              )
+            ) {
+              throw new ConflictException(
+                'Não é possível trocar a carteira enquanto houver etapas financiadas ou submetidas',
+              );
+            }
+          }
+        }
+
+        return tx.orm.public.User.select(
+          'id',
+          'name',
+          'email',
+          'walletAddress',
+          'createdAt',
+          'updatedAt',
+        )
+          .where({ id: userId })
+          .update({ walletAddress: challenge.walletAddress });
+      });
       if (!user) throw new UnauthorizedException();
       return user;
     } catch (error) {

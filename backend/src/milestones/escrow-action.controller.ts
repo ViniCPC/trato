@@ -38,6 +38,16 @@ function parseAction(value: string): EscrowAction {
 export class EscrowActionController {
   constructor(private readonly actions: MilestoneActionService) {}
 
+  @Post(':milestoneId/sync')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Sincroniza a etapa com o estado on-chain' })
+  sync(
+    @Param('milestoneId', new ParseUUIDPipe()) milestoneId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.actions.sync(milestoneId, request.user.id);
+  }
+
   @Post(':milestoneId/:action/prepare')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Monta uma transação para a carteira assinar' })
