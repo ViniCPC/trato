@@ -31,6 +31,7 @@ export class MilestoneTransitionError extends Error {
 interface TransitionInput {
   currentStatus: MilestoneStatus;
   nextStatus: MilestoneStatus;
+  action?: 'claim';
   userId: string;
   project: Readonly<{
     clientId: string;
@@ -41,6 +42,7 @@ interface TransitionInput {
 export function transitionMilestone({
   currentStatus,
   nextStatus,
+  action,
   userId,
   project,
 }: TransitionInput): MilestoneStatus {
@@ -66,13 +68,17 @@ export function transitionMilestone({
     );
   }
 
+  const allowedRole =
+    action === 'claim' && currentStatus === 'submitted'
+      ? 'freelancer'
+      : rule.actor;
   const allowedUserId =
-    rule.actor === 'client' ? project.clientId : project.freelancerId;
+    allowedRole === 'client' ? project.clientId : project.freelancerId;
 
   if (userId !== allowedUserId) {
     throw new MilestoneTransitionError(
       'FORBIDDEN_ACTOR',
-      rule.actor === 'client'
+      allowedRole === 'client'
         ? 'Somente o cliente do projeto pode executar esta transição'
         : 'Somente o freelancer do projeto pode executar esta transição',
     );

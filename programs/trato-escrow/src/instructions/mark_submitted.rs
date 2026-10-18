@@ -10,6 +10,7 @@ use crate::{
 pub fn handler(ctx: Context<MarkSubmitted>) -> Result<()> {
     let escrow = &mut ctx.accounts.escrow;
     escrow.status = EscrowStatus::Submitted;
+    escrow.submitted_at = Clock::get()?.unix_timestamp;
 
     emit!(EscrowSubmitted {
         escrow: escrow.key(),

@@ -9,7 +9,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { finalize, timer } from 'rxjs';
+import { catchError, finalize, forkJoin, of, switchMap, timer } from 'rxjs';
 
 import { ToastService } from '../../../core/services/toast.service';
 import { BrlpPipe } from '../../../shared/pipes/brlp.pipe';
@@ -321,15 +321,50 @@ export class ProjectDetailPageComponent {
   });
 
   constructor() {
-    this.loadProject();
+    this.loadProject(undefined, undefined, true);
   }
 
-  protected loadProject(highlightedMilestoneId?: string, afterLoad?: () => void): void {
+  protected loadProject(
+    highlightedMilestoneId?: string,
+    afterLoad?: () => void,
+    syncOnOpen = false,
+  ): void {
     this.loading.set(true);
     this.error.set(false);
     this.api
       .getById(this.projectId)
       .pipe(
+        switchMap((project) => {
+          if (!syncOnOpen) return of(project);
+          const active = project.milestones.filter(
+            (milestone) => milestone.status === 'funded' || milestone.status === 'submitted',
+          );
+          if (!active.length) return of(project);
+          let syncFailed = false;
+          return forkJoin(
+            active.map((milestone) =>
+              this.api.syncMilestone(milestone.id).pipe(
+                catchError(() => {
+                  syncFailed = true;
+                  return of(null);
+                }),
+              ),
+            ),
+          ).pipe(
+            switchMap((results) => {
+              if (syncFailed) {
+                this.toast.show('Algumas etapas não puderam ser sincronizadas', {
+                  tone: 'error',
+                });
+              }
+              return results.some(
+                (result, index) => result && result.status !== active[index].status,
+              )
+                ? this.api.getById(this.projectId)
+                : of(project);
+            }),
+          );
+        }),
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.loading.set(false)),
       )

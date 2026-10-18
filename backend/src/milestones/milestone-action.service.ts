@@ -1,5 +1,7 @@
 import {
   ConflictException,
+  HttpException,
+  HttpStatus,
   ForbiddenException,
   Inject,
   Injectable,
@@ -25,6 +27,7 @@ const ACTION_STATUS: Record<EscrowAction, MilestoneStatus> = {
   submit: 'submitted',
   release: 'released',
   refund: 'refunded',
+  claim: 'released',
 };
 
 interface ActionRecord {
@@ -59,11 +62,17 @@ function isUniqueViolation(error: unknown): boolean {
 
 @Injectable()
 export class MilestoneActionService {
+  private readonly syncAttempts = new Map<string, number[]>();
+  private readonly lastSyncByMilestone = new Map<string, number>();
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     @Inject(ESCROW_PROVIDER) private readonly escrow: EscrowProvider,
   ) {}
+
+  getRules() {
+    return this.escrow.getRules();
+  }
 
   async prepare(milestoneId: string, userId: string, action: EscrowAction) {
     const record = await this.loadActionRecord(milestoneId, userId);
@@ -79,6 +88,7 @@ export class MilestoneActionService {
     ) {
       return this.toResponse(record.milestone);
     }
+    this.assertSyncRateLimit(userId, milestoneId);
     const found = await this.escrow.findUnconfirmedAction(
       record.context,
       record.milestone.status,
@@ -87,7 +97,9 @@ export class MilestoneActionService {
     const actorId =
       found.action === 'submit'
         ? record.project.freelancerId
-        : record.project.clientId;
+        : found.action === 'claim'
+          ? record.project.freelancerId
+          : record.project.clientId;
     return this.confirm(milestoneId, actorId, found.action, found.signature);
   }
 
@@ -142,6 +154,7 @@ export class MilestoneActionService {
           submit: { submitTxSignature: signature, submittedAt: now },
           release: { releaseTxSignature: signature, releasedAt: now },
           refund: { refundTxSignature: signature },
+          claim: { releaseTxSignature: signature, releasedAt: now },
         }[action];
 
         const updated = await tx.orm.public.Milestone.where({
@@ -169,7 +182,7 @@ export class MilestoneActionService {
           });
         }
 
-        if (action === 'release') {
+        if (action === 'release' || action === 'claim') {
           const remaining = await tx.orm.public.Milestone.where({
             projectId: initial.project.id,
           })
@@ -259,6 +272,7 @@ export class MilestoneActionService {
       return transitionMilestone({
         currentStatus: record.milestone.status,
         nextStatus: ACTION_STATUS[action],
+        action: action === 'claim' ? 'claim' : undefined,
         userId,
         project: record.project,
       });
@@ -287,6 +301,7 @@ export class MilestoneActionService {
       submit: milestone.submitTxSignature,
       release: milestone.releaseTxSignature,
       refund: milestone.refundTxSignature,
+      claim: milestone.releaseTxSignature,
     }[action];
   }
 
@@ -305,5 +320,28 @@ export class MilestoneActionService {
       ...milestone,
       amountBaseUnits: milestone.amountBaseUnits.toString(),
     };
+  }
+
+  private assertSyncRateLimit(userId: string, milestoneId: string): void {
+    const now = Date.now();
+    const attempts = (this.syncAttempts.get(userId) ?? []).filter(
+      (time) => now - time < 60_000,
+    );
+    const key = `${userId}:${milestoneId}`;
+    const lastSync = this.lastSyncByMilestone.get(key) ?? 0;
+    if (attempts.length >= 20 || now - lastSync < 30_000) {
+      throw new HttpException(
+        'Sincronização solicitada recentemente; tente novamente em instantes',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+    attempts.push(now);
+    this.syncAttempts.set(userId, attempts);
+    this.lastSyncByMilestone.set(key, now);
+    if (this.lastSyncByMilestone.size > 10_000) {
+      for (const [entry, time] of this.lastSyncByMilestone) {
+        if (now - time >= 30_000) this.lastSyncByMilestone.delete(entry);
+      }
+    }
   }
 }

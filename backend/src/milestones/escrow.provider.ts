@@ -1,9 +1,10 @@
-import type { MilestoneStatus } from './milestone-state-machine';
 import { HttpException, HttpStatus } from '@nestjs/common';
+
+import type { MilestoneStatus } from './milestone-state-machine';
 
 export const ESCROW_PROVIDER = Symbol('ESCROW_PROVIDER');
 
-export type EscrowAction = 'fund' | 'submit' | 'release' | 'refund';
+export type EscrowAction = 'fund' | 'submit' | 'release' | 'refund' | 'claim';
 
 export interface EscrowContext {
   milestoneId: string;
@@ -30,8 +31,16 @@ export interface ConfirmedEscrowTransaction {
 }
 
 export interface EscrowSyncAction {
-  action: 'submit' | 'release' | 'refund';
+  action: 'submit' | 'release' | 'refund' | 'claim';
   signature: string;
+}
+
+export interface EscrowRules {
+  freelancerWallet: string;
+  mint: string;
+  maxAmountBaseUnits: string;
+  claimDelaySeconds: number;
+  paused: boolean;
 }
 
 export interface EscrowProvider {
@@ -48,6 +57,7 @@ export interface EscrowProvider {
     context: EscrowContext,
     status: 'funded' | 'submitted',
   ): Promise<EscrowSyncAction | null>;
+  getRules(): Promise<EscrowRules | null>;
 }
 
 export class TransactionPendingError extends HttpException {

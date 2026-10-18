@@ -24,7 +24,8 @@ function parseAction(value: string): EscrowAction {
     value === 'fund' ||
     value === 'submit' ||
     value === 'release' ||
-    value === 'refund'
+    value === 'refund' ||
+    value === 'claim'
   ) {
     return value;
   }

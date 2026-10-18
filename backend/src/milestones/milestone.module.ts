@@ -5,6 +5,7 @@ import { AuthModule } from '../auth/auth.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { MilestoneController } from './milestone.controller';
 import { EscrowActionController } from './escrow-action.controller';
+import { EscrowRulesController } from './escrow-rules.controller';
 import { ESCROW_PROVIDER, type EscrowProvider } from './escrow.provider';
 import { MilestoneActionService } from './milestone-action.service';
 import { MilestoneService } from './milestone.service';
@@ -13,7 +14,11 @@ import { SolanaEscrowProvider } from './solana-escrow.provider';
 
 @Module({
   imports: [PrismaModule, AuthModule],
-  controllers: [MilestoneController, EscrowActionController],
+  controllers: [
+    MilestoneController,
+    EscrowActionController,
+    EscrowRulesController,
+  ],
   providers: [
     MilestoneService,
     MilestoneActionService,

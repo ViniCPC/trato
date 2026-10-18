@@ -14,4 +14,14 @@ pub enum EscrowError {
     InvalidVaultBalance,
     #[msg("Uma operação aritmética excedeu o limite permitido")]
     ArithmeticOverflow,
+    #[msg("A configuração de escrow é inválida")]
+    InvalidConfig,
+    #[msg("Novos depósitos estão pausados")]
+    DepositsPaused,
+    #[msg("A carteira de freelancer não é permitida")]
+    InvalidFreelancer,
+    #[msg("O valor excede o teto por etapa")]
+    AmountTooHigh,
+    #[msg("O prazo para saque ainda não terminou")]
+    ClaimTooEarly,
 }

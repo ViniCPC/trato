@@ -11,6 +11,7 @@ const ACTION_INSTRUCTION_NAMES = Object.freeze({
   submit: 'mark_submitted',
   release: 'release',
   refund: 'refund',
+  claim: 'claim_after_deadline',
 });
 
 export function uuidToBytes(uuid) {
@@ -48,5 +49,11 @@ export function getInstructionDiscriminator(action) {
 export function getEscrowAccountDiscriminator() {
   const account = IDL.accounts.find((candidate) => candidate.name === 'Escrow');
   if (!account) throw new Error('Conta escrow não encontrada no IDL');
+  return Uint8Array.from(account.discriminator);
+}
+
+export function getConfigAccountDiscriminator() {
+  const account = IDL.accounts.find((candidate) => candidate.name === 'EscrowConfig');
+  if (!account) throw new Error('Conta EscrowConfig não encontrada no IDL');
   return Uint8Array.from(account.discriminator);
 }

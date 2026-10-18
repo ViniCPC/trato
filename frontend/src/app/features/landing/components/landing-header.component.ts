@@ -48,6 +48,13 @@ const SECTIONS = [
                 </a>
               </li>
             }
+            <li>
+              <a
+                routerLink="/regras"
+                class="rounded-full px-3 py-2 text-sm text-ink-700 transition-colors hover:bg-ink-100 hover:text-ink-950"
+                >Regras</a
+              >
+            </li>
           </ul>
         </nav>
 
@@ -98,6 +105,14 @@ const SECTIONS = [
                   </a>
                 </li>
               }
+              <li>
+                <a
+                  routerLink="/regras"
+                  class="block rounded-xl px-3 py-3 text-base text-ink-900 hover:bg-ink-100"
+                  (click)="menuOpen.set(false)"
+                  >Regras do pagamento</a
+                >
+              </li>
             </ul>
             <div class="mt-4 grid grid-cols-2 gap-3">
               <a

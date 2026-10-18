@@ -11,6 +11,12 @@ export const routes: Routes = [
     title: 'Trato: pagamento por etapas para freelancers',
   },
   {
+    path: 'regras',
+    loadComponent: () =>
+      import('./features/landing/rules-page.component').then((page) => page.RulesPageComponent),
+    title: 'Regras do escrow | Trato',
+  },
+  {
     path: '',
     loadChildren: () => import('./features/auth/auth.routes').then((routes) => routes.AUTH_ROUTES),
   },

@@ -33,3 +33,12 @@ pub struct EscrowRefunded {
     pub milestone_id: [u8; 16],
     pub amount: u64,
 }
+
+#[event]
+pub struct EscrowClaimed {
+    pub escrow: Pubkey,
+    pub client: Pubkey,
+    pub freelancer: Pubkey,
+    pub milestone_id: [u8; 16],
+    pub amount: u64,
+}

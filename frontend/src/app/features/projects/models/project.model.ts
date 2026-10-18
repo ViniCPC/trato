@@ -2,7 +2,7 @@ import type { MilestoneStatus, ProjectStatus } from '../config/status.config';
 
 export type { MilestoneStatus, ProjectStatus } from '../config/status.config';
 export type ProjectRole = 'client' | 'freelancer';
-export type MilestoneAction = 'fund' | 'submit' | 'release' | 'refund';
+export type MilestoneAction = 'fund' | 'submit' | 'release' | 'refund' | 'claim';
 
 export interface ProjectParty {
   id: string;

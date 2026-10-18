@@ -83,7 +83,7 @@ interface HowStep {
             </h1>
             <p class="mt-7 max-w-xl text-lg leading-relaxed text-ink-600 sm:text-xl">
               Pagamento por etapas para freelancers. O valor fica protegido num contrato inteligente
-              e só é liberado quando a entrega é aprovada.
+              e é liberado quando o cliente aprova ou, após a entrega, termina o prazo de saque.
             </p>
 
             <div class="mt-9 flex flex-wrap gap-3">
@@ -499,6 +499,7 @@ interface HowStep {
                 Solana Explorer
               </a>
             </li>
+            <li><a routerLink="/regras" class="hover:text-ink-950">Regras do pagamento</a></li>
           </ul>
         </nav>
       </div>
@@ -507,7 +508,7 @@ interface HowStep {
           class="container-page flex flex-col gap-2 py-6 text-sm text-ink-500 sm:flex-row sm:justify-between"
         >
           <p>© {{ year }} Trato</p>
-          <p>Projeto de demonstração. Sem dinheiro real.</p>
+          <p>Versão beta. Confira a rede e o mint antes de depositar.</p>
         </div>
       </div>
     </footer>
@@ -573,8 +574,8 @@ export class LandingPageComponent {
     },
     {
       icon: 'check',
-      title: 'Aprove e libere',
-      text: 'Quem contratou confere a entrega e libera o valor para a carteira do freelancer.',
+      title: 'Aprove ou aguarde o prazo',
+      text: 'Quem contratou pode liberar o valor. Após a entrega e o prazo registrado, o freelancer também pode sacar.',
       stateLabel: 'Dinheiro liberado',
       barClass: 'bg-brand-500',
       textClass: 'text-brand-700',
@@ -593,7 +594,7 @@ export class LandingPageComponent {
       title: 'Para quem contrata',
       lead: 'Você paga pelo que recebe, etapa por etapa.',
       items: [
-        'O valor só é liberado quando você aprova a entrega.',
+        'Você pode liberar o valor após o depósito; depois da entrega e do prazo, o freelancer também pode sacar.',
         'Uma etapa não entregue pode ser reembolsada.',
         'A linha do tempo mostra o andamento sem depender de mensagens soltas.',
       ],
@@ -605,7 +606,7 @@ export class LandingPageComponent {
       lead: 'Você começa sabendo que o dinheiro existe.',
       items: [
         'O valor já está protegido antes de você começar.',
-        'Cada entrega aprovada vira um pagamento separado.',
+        'Cada etapa aprovada ou sacada após o prazo vira um pagamento separado.',
         'Depois da entrega, o cliente não pode puxar o dinheiro de volta.',
       ],
       cta: 'Trabalhar com o Trato',

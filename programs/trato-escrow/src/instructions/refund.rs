@@ -14,10 +14,10 @@ pub fn handler(ctx: Context<Refund>) -> Result<()> {
     let escrow = &ctx.accounts.escrow;
     let agreed_amount = escrow.amount;
     let vault_amount = ctx.accounts.vault.amount;
-    let remainder = vault_amount
-        .checked_sub(agreed_amount)
-        .ok_or(EscrowError::InvalidVaultBalance)?;
-    require_eq!(remainder, 0, EscrowError::InvalidVaultBalance);
+    require!(
+        vault_amount >= agreed_amount,
+        EscrowError::InvalidVaultBalance
+    );
 
     let client = escrow.client;
     let milestone_id = escrow.milestone_id;
@@ -38,7 +38,7 @@ pub fn handler(ctx: Context<Refund>) -> Result<()> {
     };
     let transfer_context =
         CpiContext::new_with_signer(ctx.accounts.token_program.key(), transfer_accounts, signer);
-    token_interface::transfer_checked(transfer_context, agreed_amount, ctx.accounts.mint.decimals)?;
+    token_interface::transfer_checked(transfer_context, vault_amount, ctx.accounts.mint.decimals)?;
 
     let close_accounts = CloseAccount {
         account: ctx.accounts.vault.to_account_info(),
@@ -82,11 +82,14 @@ pub struct Refund<'info> {
     )]
     pub vault: InterfaceAccount<'info, TokenAccount>,
     #[account(
-        mut,
-        token::mint = mint,
-        token::authority = client,
-        token::token_program = token_program,
+        init_if_needed,
+        payer = client,
+        associated_token::mint = mint,
+        associated_token::authority = client,
+        associated_token::token_program = token_program,
     )]
     pub client_token_account: InterfaceAccount<'info, TokenAccount>,
     pub token_program: Interface<'info, TokenInterface>,
+    pub associated_token_program: Program<'info, anchor_spl::associated_token::AssociatedToken>,
+    pub system_program: Program<'info, System>,
 }

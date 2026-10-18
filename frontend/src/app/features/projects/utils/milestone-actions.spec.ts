@@ -14,7 +14,7 @@ describe('getAvailableActions', () => {
     { role: 'client', status: 'refunded', expected: [] },
     { role: 'freelancer', status: 'pending', expected: [] },
     { role: 'freelancer', status: 'funded', expected: ['submit'] },
-    { role: 'freelancer', status: 'submitted', expected: [] },
+    { role: 'freelancer', status: 'submitted', expected: ['claim'] },
     { role: 'freelancer', status: 'released', expected: [] },
     { role: 'freelancer', status: 'refunded', expected: [] },
   ];

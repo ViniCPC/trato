@@ -61,4 +61,25 @@ describe('transitionMilestone', () => {
       }),
     ).toThrow(MilestoneTransitionError);
   });
+
+  it('permite claim apenas ao freelancer depois da entrega', () => {
+    expect(
+      transitionMilestone({
+        currentStatus: 'submitted',
+        nextStatus: 'released',
+        action: 'claim',
+        userId: 'freelancer',
+        project,
+      }),
+    ).toBe('released');
+    expect(() =>
+      transitionMilestone({
+        currentStatus: 'submitted',
+        nextStatus: 'released',
+        action: 'claim',
+        userId: 'client',
+        project,
+      }),
+    ).toThrow(MilestoneTransitionError);
+  });
 });

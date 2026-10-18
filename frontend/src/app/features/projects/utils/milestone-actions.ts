@@ -11,7 +11,7 @@ const ACTIONS_BY_ROLE = {
   freelancer: {
     pending: [],
     funded: ['submit'],
-    submitted: [],
+    submitted: ['claim'],
     released: [],
     refunded: [],
   },
@@ -24,6 +24,7 @@ export const MILESTONE_ACTION_LABELS: Readonly<Record<MilestoneAction, string>> 
   submit: 'Enviar entrega',
   release: 'Liberar pagamento',
   refund: 'Reembolsar',
+  claim: 'Sacar após prazo',
 };
 
 export function getAvailableActions(

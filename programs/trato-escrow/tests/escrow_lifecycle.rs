@@ -1,8 +1,11 @@
 use {
     anchor_lang::{
         prelude::Pubkey,
-        solana_program::{instruction::Instruction, program_option::COption, program_pack::Pack},
-        AccountDeserialize, InstructionData, ToAccountMetas,
+        solana_program::{
+            bpf_loader_upgradeable, instruction::Instruction, program_option::COption,
+            program_pack::Pack,
+        },
+        AccountDeserialize, AccountSerialize, InstructionData, ToAccountMetas,
     },
     anchor_spl::{
         associated_token::{
@@ -19,13 +22,17 @@ use {
     solana_message::{Message, VersionedMessage},
     solana_signer::Signer,
     solana_transaction::versioned::VersionedTransaction,
-    trato_escrow::{constants::ESCROW_SEED, state::EscrowStatus},
+    trato_escrow::{
+        constants::{CONFIG_SEED, ESCROW_SEED},
+        state::{EscrowConfig, EscrowStatus},
+    },
 };
 
 const TOKEN_DECIMALS: u8 = 6;
 const CLIENT_BALANCE: u64 = 50_000_000;
 const ESCROW_AMOUNT: u64 = 7_500_000;
 const AIRDROP_LAMPORTS: u64 = 10_000_000_000;
+const CLAIM_DELAY_SECONDS: i64 = 10;
 
 struct Fixture {
     svm: LiteSVM,
@@ -34,11 +41,16 @@ struct Fixture {
     attacker: Keypair,
     mint: Pubkey,
     client_token_account: Pubkey,
+    attacker_token_account: Pubkey,
     milestone_id: [u8; 16],
 }
 
 impl Fixture {
     fn new() -> Self {
+        Self::new_with_config(true)
+    }
+
+    fn new_with_config(with_config: bool) -> Self {
         let mut svm = LiteSVM::new();
         svm.add_program(
             trato_escrow::id(),
@@ -67,6 +79,29 @@ impl Fixture {
             client.pubkey(),
             CLIENT_BALANCE,
         );
+        let attacker_token_account = get_associated_token_address_with_program_id(
+            &attacker.pubkey(),
+            &mint,
+            &TOKEN_PROGRAM_ID,
+        );
+        seed_token_account(&mut svm, attacker_token_account, mint, attacker.pubkey(), 1);
+        let (config_address, config_bump) =
+            Pubkey::find_program_address(&[CONFIG_SEED], &trato_escrow::id());
+        if with_config {
+            seed_config(
+                &mut svm,
+                config_address,
+                EscrowConfig {
+                    admin: client.pubkey(),
+                    freelancer: freelancer.pubkey(),
+                    allowed_mint: mint,
+                    max_amount: ESCROW_AMOUNT * 2,
+                    claim_delay_seconds: CLAIM_DELAY_SECONDS,
+                    paused: false,
+                    bump: config_bump,
+                },
+            );
+        }
 
         Self {
             svm,
@@ -75,6 +110,7 @@ impl Fixture {
             attacker,
             mint,
             client_token_account,
+            attacker_token_account,
             milestone_id: *b"milestone-test01",
         }
     }
@@ -93,6 +129,46 @@ impl Fixture {
 
     fn vault(&self) -> Pubkey {
         get_associated_token_address_with_program_id(&self.escrow(), &self.mint, &TOKEN_PROGRAM_ID)
+    }
+
+    fn config(&self) -> Pubkey {
+        Pubkey::find_program_address(&[CONFIG_SEED], &trato_escrow::id()).0
+    }
+
+    fn program_data(&self) -> Pubkey {
+        Pubkey::find_program_address(&[trato_escrow::id().as_ref()], &bpf_loader_upgradeable::ID).0
+    }
+
+    fn set_upgrade_authority(&mut self, authority: Pubkey) {
+        let address = self.program_data();
+        let mut account = self.svm.get_account(&address).unwrap();
+        account.data[..4].copy_from_slice(&3_u32.to_le_bytes());
+        account.data[4..12].copy_from_slice(&0_u64.to_le_bytes());
+        account.data[12] = 1;
+        account.data[13..45].copy_from_slice(authority.as_ref());
+        self.svm.set_account(address, account).unwrap();
+    }
+
+    fn initialize_config_instruction(&self, authority: Pubkey) -> Instruction {
+        Instruction::new_with_bytes(
+            trato_escrow::id(),
+            &trato_escrow::instruction::InitializeConfig {
+                admin: self.client.pubkey(),
+                freelancer: self.freelancer.pubkey(),
+                allowed_mint: self.mint,
+                max_amount: ESCROW_AMOUNT * 2,
+                claim_delay_seconds: CLAIM_DELAY_SECONDS,
+            }
+            .data(),
+            trato_escrow::accounts::InitializeConfig {
+                authority,
+                config: self.config(),
+                program: trato_escrow::id(),
+                program_data: self.program_data(),
+                system_program: anchor_lang::system_program::ID,
+            }
+            .to_account_metas(None),
+        )
     }
 
     fn freelancer_token_account(&self) -> Pubkey {
@@ -121,6 +197,7 @@ impl Fixture {
                 token_program: TOKEN_PROGRAM_ID,
                 associated_token_program: ASSOCIATED_TOKEN_ID,
                 system_program: anchor_lang::system_program::ID,
+                config: self.config(),
             }
             .to_account_metas(None),
         )
@@ -162,6 +239,7 @@ impl Fixture {
                 token_program: TOKEN_PROGRAM_ID,
                 associated_token_program: ASSOCIATED_TOKEN_ID,
                 system_program: anchor_lang::system_program::ID,
+                client_token_account: self.client_token_account,
             }
             .to_account_metas(None),
         )
@@ -178,6 +256,50 @@ impl Fixture {
                 vault: self.vault(),
                 client_token_account: self.client_token_account,
                 token_program: TOKEN_PROGRAM_ID,
+                associated_token_program: ASSOCIATED_TOKEN_ID,
+                system_program: anchor_lang::system_program::ID,
+            }
+            .to_account_metas(None),
+        )
+    }
+
+    fn claim_instruction(&self, freelancer: Pubkey) -> Instruction {
+        Instruction::new_with_bytes(
+            trato_escrow::id(),
+            &trato_escrow::instruction::ClaimAfterDeadline {}.data(),
+            trato_escrow::accounts::ClaimAfterDeadline {
+                freelancer,
+                client: self.client.pubkey(),
+                mint: self.mint,
+                escrow: self.escrow(),
+                vault: self.vault(),
+                freelancer_token_account: self.freelancer_token_account(),
+                token_program: TOKEN_PROGRAM_ID,
+                associated_token_program: ASSOCIATED_TOKEN_ID,
+                system_program: anchor_lang::system_program::ID,
+                client_token_account: self.client_token_account,
+            }
+            .to_account_metas(None),
+        )
+    }
+
+    fn update_config_instruction(
+        &self,
+        admin: Pubkey,
+        max_amount: u64,
+        paused: bool,
+    ) -> Instruction {
+        Instruction::new_with_bytes(
+            trato_escrow::id(),
+            &trato_escrow::instruction::UpdateConfig {
+                max_amount,
+                claim_delay_seconds: CLAIM_DELAY_SECONDS,
+                paused,
+            }
+            .data(),
+            trato_escrow::accounts::UpdateConfig {
+                admin,
+                config: self.config(),
             }
             .to_account_metas(None),
         )
@@ -185,6 +307,21 @@ impl Fixture {
 
     fn send_as_client(&mut self, instruction: Instruction) -> bool {
         send(&mut self.svm, &self.client, instruction)
+    }
+
+    fn donate_one_to_vault(&mut self) {
+        let instruction = anchor_spl::token::spl_token::instruction::transfer_checked(
+            &TOKEN_PROGRAM_ID,
+            &self.attacker_token_account,
+            &self.mint,
+            &self.vault(),
+            &self.attacker.pubkey(),
+            &[],
+            1,
+            TOKEN_DECIMALS,
+        )
+        .unwrap();
+        assert!(send(&mut self.svm, &self.attacker, instruction));
     }
 
     fn fund(&mut self) {
@@ -200,6 +337,11 @@ impl Fixture {
     fn escrow_state(&self) -> trato_escrow::state::Escrow {
         let account = self.svm.get_account(&self.escrow()).unwrap();
         trato_escrow::state::Escrow::try_deserialize(&mut account.data.as_slice()).unwrap()
+    }
+
+    fn config_state(&self) -> EscrowConfig {
+        let account = self.svm.get_account(&self.config()).unwrap();
+        EscrowConfig::try_deserialize(&mut account.data.as_slice()).unwrap()
     }
 
     fn token_balance(&self, address: Pubkey) -> u64 {
@@ -236,6 +378,22 @@ fn seed_mint(svm: &mut LiteSVM, address: Pubkey, authority: Pubkey) {
             lamports: svm.minimum_balance_for_rent_exemption(data.len()),
             data,
             owner: TOKEN_PROGRAM_ID,
+            executable: false,
+            rent_epoch: 0,
+        },
+    )
+    .unwrap();
+}
+
+fn seed_config(svm: &mut LiteSVM, address: Pubkey, config: EscrowConfig) {
+    let mut data = Vec::new();
+    config.try_serialize(&mut data).unwrap();
+    svm.set_account(
+        address,
+        Account {
+            lamports: svm.minimum_balance_for_rent_exemption(data.len()),
+            data,
+            owner: trato_escrow::id(),
             executable: false,
             rent_epoch: 0,
         },
@@ -424,13 +582,11 @@ fn client_can_release_early_while_funded() {
 }
 
 #[test]
-fn release_rejects_a_vault_with_an_unexpected_balance() {
+fn release_returns_donated_surplus_to_client() {
     let mut fixture = Fixture::new();
     fixture.fund();
-    let vault = fixture.vault();
-    let mint = fixture.mint;
-    let escrow = fixture.escrow();
-    seed_token_account(&mut fixture.svm, vault, mint, escrow, ESCROW_AMOUNT + 1);
+    fixture.donate_one_to_vault();
+    assert_eq!(fixture.token_balance(fixture.vault()), ESCROW_AMOUNT + 1);
 
     let instruction = fixture.release_instruction(
         fixture.client.pubkey(),
@@ -438,7 +594,16 @@ fn release_rejects_a_vault_with_an_unexpected_balance() {
         fixture.mint,
         fixture.vault(),
     );
-    assert!(!fixture.send_as_client(instruction));
+    assert!(fixture.send_as_client(instruction));
+    assert_eq!(
+        fixture.token_balance(fixture.freelancer_token_account()),
+        ESCROW_AMOUNT
+    );
+    assert_eq!(
+        fixture.token_balance(fixture.client_token_account),
+        CLIENT_BALANCE - ESCROW_AMOUNT + 1
+    );
+    assert!(fixture.svm.get_account(&fixture.vault()).is_none());
 }
 
 #[test]
@@ -456,4 +621,90 @@ fn refund_returns_tokens_and_closes_vault_and_escrow() {
     assert!(fixture.svm.get_account(&fixture.vault()).is_none());
     assert!(fixture.svm.get_account(&fixture.escrow()).is_none());
     assert!(fixture.svm.get_balance(&fixture.client.pubkey()) > client_lamports_before);
+}
+
+#[test]
+fn refund_returns_donated_surplus_to_client() {
+    let mut fixture = Fixture::new();
+    fixture.fund();
+    fixture.donate_one_to_vault();
+    let instruction = fixture.refund_instruction(fixture.client.pubkey(), fixture.mint);
+    assert!(fixture.send_as_client(instruction));
+    assert_eq!(
+        fixture.token_balance(fixture.client_token_account),
+        CLIENT_BALANCE + 1
+    );
+    assert!(fixture.svm.get_account(&fixture.vault()).is_none());
+}
+
+#[test]
+fn config_restricts_freelancer_mint_amount_and_deposit_pause() {
+    let mut fixture = Fixture::new();
+    let attacker_fund = fixture.fund_instruction(fixture.attacker.pubkey(), ESCROW_AMOUNT);
+    assert!(!fixture.send_as_client(attacker_fund));
+    let too_large = fixture.fund_instruction(fixture.freelancer.pubkey(), ESCROW_AMOUNT * 2 + 1);
+    assert!(!fixture.send_as_client(too_large));
+
+    let attacker_update =
+        fixture.update_config_instruction(fixture.attacker.pubkey(), ESCROW_AMOUNT, true);
+    assert!(!send(&mut fixture.svm, &fixture.attacker, attacker_update));
+    let pause = fixture.update_config_instruction(fixture.client.pubkey(), ESCROW_AMOUNT, true);
+    assert!(fixture.send_as_client(pause));
+    assert!(fixture.config_state().paused);
+    let fund_while_paused = fixture.fund_instruction(fixture.freelancer.pubkey(), ESCROW_AMOUNT);
+    assert!(!fixture.send_as_client(fund_while_paused));
+
+    let unpause = fixture.update_config_instruction(fixture.client.pubkey(), ESCROW_AMOUNT, false);
+    assert!(fixture.send_as_client(unpause));
+    fixture.fund();
+    assert_eq!(
+        fixture.escrow_state().claim_delay_seconds,
+        CLAIM_DELAY_SECONDS
+    );
+}
+
+#[test]
+fn only_upgrade_authority_can_initialize_config() {
+    let mut fixture = Fixture::new_with_config(false);
+    fixture.set_upgrade_authority(fixture.client.pubkey());
+    let attacker = fixture.initialize_config_instruction(fixture.attacker.pubkey());
+    assert!(!send(&mut fixture.svm, &fixture.attacker, attacker));
+    assert!(fixture.svm.get_account(&fixture.config()).is_none());
+    let initialize = fixture.initialize_config_instruction(fixture.client.pubkey());
+    assert!(fixture.send_as_client(initialize));
+    assert_eq!(
+        fixture.config_state().freelancer,
+        fixture.freelancer.pubkey()
+    );
+}
+
+#[test]
+fn freelancer_claims_only_after_deadline_and_client_receives_surplus() {
+    let mut fixture = Fixture::new();
+    fixture.fund();
+    fixture.mark_submitted();
+    fixture.donate_one_to_vault();
+    let wrong_signer = fixture.claim_instruction(fixture.attacker.pubkey());
+    assert!(!send(&mut fixture.svm, &fixture.attacker, wrong_signer));
+
+    let claim = fixture.claim_instruction(fixture.freelancer.pubkey());
+    assert!(!send(&mut fixture.svm, &fixture.freelancer, claim.clone()));
+    let submitted_at = fixture.escrow_state().submitted_at;
+    let mut clock = fixture.svm.get_sysvar::<anchor_lang::prelude::Clock>();
+    clock.unix_timestamp = submitted_at + CLAIM_DELAY_SECONDS;
+    fixture
+        .svm
+        .set_sysvar::<anchor_lang::prelude::Clock>(&clock);
+
+    assert!(send(&mut fixture.svm, &fixture.freelancer, claim));
+    assert_eq!(
+        fixture.token_balance(fixture.freelancer_token_account()),
+        ESCROW_AMOUNT
+    );
+    assert_eq!(
+        fixture.token_balance(fixture.client_token_account),
+        CLIENT_BALANCE - ESCROW_AMOUNT + 1
+    );
+    assert!(fixture.svm.get_account(&fixture.escrow()).is_none());
+    assert!(fixture.svm.get_account(&fixture.vault()).is_none());
 }

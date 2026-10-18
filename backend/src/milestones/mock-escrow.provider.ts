@@ -6,6 +6,7 @@ import type {
   EscrowAction,
   EscrowContext,
   EscrowProvider,
+  EscrowRules,
   EscrowSyncAction,
   PreparedEscrowTransaction,
 } from './escrow.provider';
@@ -15,14 +16,16 @@ const ACTION_STATUS = {
   submit: 'submitted',
   release: 'released',
   refund: 'refunded',
+  claim: 'released',
 } as const;
 
 @Injectable()
 export class MockEscrowProvider implements EscrowProvider {
-  findUnconfirmedAction(
-    _context: EscrowContext,
-    _status: 'funded' | 'submitted',
-  ): Promise<EscrowSyncAction | null> {
+  getRules(): Promise<EscrowRules | null> {
+    return Promise.resolve(null);
+  }
+
+  findUnconfirmedAction(): Promise<EscrowSyncAction | null> {
     return Promise.resolve(null);
   }
 

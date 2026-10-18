@@ -6,7 +6,7 @@ const FAQ_ITEMS = [
   {
     question: 'Preciso entender de cripto para usar o Trato?',
     answer:
-      'Não. Os valores aparecem em reais e cada ação explica o que será assinado. Você só precisa conectar uma carteira Phantom para autorizar depósitos e liberações.',
+      'Não. O valor e o token são mostrados antes da assinatura. Você precisa conectar uma carteira Phantom para autorizar as ações on-chain.',
   },
   {
     question: 'O que acontece se o freelancer não entregar?',
@@ -16,7 +16,7 @@ const FAQ_ITEMS = [
   {
     question: 'E se o cliente não aprovar uma etapa entregue?',
     answer:
-      'Depois da entrega, o contrato bloqueia o reembolso unilateral. Mediação e liberação automática por prazo são evoluções previstas para depois da demonstração.',
+      'Depois da entrega, o contrato bloqueia o reembolso unilateral. Se o cliente não liberar o valor, o freelancer pode sacá-lo após o prazo registrado no escrow.',
   },
   {
     question: 'O Trato tem acesso à minha chave ou ao meu dinheiro?',

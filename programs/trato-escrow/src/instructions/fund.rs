@@ -5,7 +5,7 @@ use anchor_spl::{
 };
 
 use crate::{
-    constants::ESCROW_SEED,
+    constants::{CONFIG_SEED, ESCROW_SEED},
     errors::EscrowError,
     events::EscrowFunded,
     state::{Escrow, EscrowStatus},
@@ -13,6 +13,21 @@ use crate::{
 
 pub fn handler(ctx: Context<Fund>, milestone_id: [u8; 16], amount: u64) -> Result<()> {
     require!(amount > 0, EscrowError::InvalidAmount);
+    require!(!ctx.accounts.config.paused, EscrowError::DepositsPaused);
+    require!(
+        amount <= ctx.accounts.config.max_amount,
+        EscrowError::AmountTooHigh
+    );
+    require_keys_eq!(
+        ctx.accounts.freelancer.key(),
+        ctx.accounts.config.freelancer,
+        EscrowError::InvalidFreelancer
+    );
+    require_keys_eq!(
+        ctx.accounts.mint.key(),
+        ctx.accounts.config.allowed_mint,
+        EscrowError::InvalidMint
+    );
 
     let escrow = &mut ctx.accounts.escrow;
     escrow.client = ctx.accounts.client.key();
@@ -22,6 +37,8 @@ pub fn handler(ctx: Context<Fund>, milestone_id: [u8; 16], amount: u64) -> Resul
     escrow.amount = amount;
     escrow.status = EscrowStatus::Funded;
     escrow.bump = ctx.bumps.escrow;
+    escrow.claim_delay_seconds = ctx.accounts.config.claim_delay_seconds;
+    escrow.submitted_at = 0;
 
     let transfer_accounts = TransferChecked {
         mint: ctx.accounts.mint.to_account_info(),
@@ -31,6 +48,12 @@ pub fn handler(ctx: Context<Fund>, milestone_id: [u8; 16], amount: u64) -> Resul
     };
     let transfer_context = CpiContext::new(ctx.accounts.token_program.key(), transfer_accounts);
     token_interface::transfer_checked(transfer_context, amount, ctx.accounts.mint.decimals)?;
+    ctx.accounts.vault.reload()?;
+    require_eq!(
+        ctx.accounts.vault.amount,
+        amount,
+        EscrowError::InvalidVaultBalance
+    );
 
     emit!(EscrowFunded {
         escrow: escrow.key(),
@@ -79,4 +102,6 @@ pub struct Fund<'info> {
     pub token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
+    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
+    pub config: Account<'info, crate::state::EscrowConfig>,
 }

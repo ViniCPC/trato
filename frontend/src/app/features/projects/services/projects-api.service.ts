@@ -7,6 +7,7 @@ import {
   CreateProjectResponse,
   MilestoneAction,
   ProjectDetail,
+  ProjectMilestone,
   ProjectListResponse,
   ProjectRole,
   PreparedEscrowTransaction,
@@ -70,6 +71,13 @@ export class ProjectsApiService {
     return this.http.post<ConfirmedEscrowTransaction>(
       `${environment.apiUrl}/milestones/${milestoneId}/${action}/confirm`,
       { signature },
+    );
+  }
+
+  syncMilestone(milestoneId: string): Observable<ProjectMilestone> {
+    return this.http.post<ProjectMilestone>(
+      `${environment.apiUrl}/milestones/${milestoneId}/sync`,
+      {},
     );
   }
 }

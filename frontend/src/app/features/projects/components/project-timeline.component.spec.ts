@@ -58,7 +58,7 @@ describe('ProjectTimelineComponent', () => {
     expect(renderedActions('client')).toEqual(['fund', 'release', 'refund', 'release']);
   });
 
-  it('renders only submit for the freelancer', () => {
-    expect(renderedActions('freelancer')).toEqual(['submit']);
+  it('renders submit and claim for the freelancer', () => {
+    expect(renderedActions('freelancer')).toEqual(['submit', 'claim']);
   });
 });
