@@ -26,7 +26,7 @@ O provider lê o token program do mint, aceita transações legadas e v0 (`maxSu
 
 ## Configuração on-chain e deploy
 
-O `fund` exige uma PDA `config` inicializada pela *upgrade authority* do programa, com carteira fixa do freelancer, mint aceito, teto por etapa e prazo de saque. Só novos depósitos são afetados por uma atualização do teto, prazo ou pausa; o mint e o freelancer são imutáveis nessa config. A página pública `/regras` mostra os valores on-chain. Não financie com clientes enquanto a config não corresponder à carteira e ao mint pretendidos.
+O `fund` exige uma PDA `config` inicializada pela _upgrade authority_ do programa, com carteira fixa do freelancer, mint aceito, teto por etapa e prazo de saque. Só novos depósitos são afetados por uma atualização do teto, prazo ou pausa; o mint e o freelancer são imutáveis nessa config. A página pública `/regras` mostra os valores on-chain. Não financie com clientes enquanto a config não corresponder à carteira e ao mint pretendidos.
 
 Esta versão aumenta o tamanho da conta `Escrow` de 130 para 146 bytes. Antes de atualizar um programa já implantado, confirme que não há escrows antigos com fundos ou faça uma migração auditada. Teste em devnet o fluxo completo, inclusive uma transferência extra de 1 unidade de token ao vault antes de `release`, `refund` e `claim`. Não use a autoridade de upgrade da mainnet na máquina cotidiana.
 
@@ -38,7 +38,7 @@ anchor deploy --provider.cluster devnet --provider.wallet .devnet/payer.json
 node backend/scripts/configure-devnet.mjs --operation initialize --keypair .devnet/payer.json --admin <ADMIN_PUBKEY> --freelancer <FREELANCER_PUBKEY> --mint <MINT_PUBKEY> --max-amount <UNIDADES_BASE> --delay-seconds 604800
 ```
 
-O `--keypair` de inicialização deve ser a *upgrade authority* do programa. `--admin` será a carteira que poderá alterar teto, prazo e pausa depois; para isso, use `--operation update --keypair <ADMIN_KEYPAIR> --max-amount ... --delay-seconds ... --paused true|false`. O script recusa RPC diferente do público da devnet. Nunca inclua arquivos de chave no Git. A pasta `.devnet/` está ignorada.
+O `--keypair` de inicialização deve ser a _upgrade authority_ do programa. `--admin` será a carteira que poderá alterar teto, prazo e pausa depois; para isso, use `--operation update --keypair <ADMIN_KEYPAIR> --max-amount ... --delay-seconds ... --paused true|false`. O script recusa RPC diferente do público da devnet. Nunca inclua arquivos de chave no Git. A pasta `.devnet/` está ignorada.
 
 ## Configuração
 
@@ -49,3 +49,14 @@ Copie `.env.example`. `DATABASE_URL` e `JWT_SECRET` são sempre obrigatórios. Q
 - `SOLANA_TOKEN_MINT`
 
 O processo encerra no boot com uma mensagem legível se a configuração estiver incompleta. Swagger: `/docs`; JSON: `/docs-json`.
+
+## Saques e ledger
+
+O provider de saque é selecionado por `PAYOUT_DRIVER=mock|pagfinance`. O mock não exige credenciais externas; o provider real exige as variáveis `PAGFINANCE_*`, `SOLANA_RPC_URL` e `SOLANA_TOKEN_MINT` descritas em `.env.example`.
+
+- Integração: [`docs/integrations/pagfinance.md`](../docs/integrations/pagfinance.md)
+- Fluxo de saque: [`docs/flows/withdrawal-flow.md`](../docs/flows/withdrawal-flow.md)
+- Runbook: [`docs/runbooks/pagfinance-errors.md`](../docs/runbooks/pagfinance-errors.md)
+- Ledger: [`docs/architecture/ledger.md`](../docs/architecture/ledger.md)
+- Eventos: [`docs/flows/financial-events.md`](../docs/flows/financial-events.md)
+- Decisão arquitetural: [`docs/adr/001-double-entry-ledger.md`](../docs/adr/001-double-entry-ledger.md)

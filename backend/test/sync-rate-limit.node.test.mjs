@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import { MilestoneActionService } from '../dist/src/milestones/milestone-action.service.js';
 
-const service = () => new MilestoneActionService({}, {}, {});
+const service = () => new MilestoneActionService({}, {}, {}, {});
 
 test('sync bloqueia nova varredura da mesma etapa antes de 30 segundos', () => {
   const actions = service();

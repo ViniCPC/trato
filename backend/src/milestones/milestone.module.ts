@@ -11,9 +11,10 @@ import { MilestoneActionService } from './milestone-action.service';
 import { MilestoneService } from './milestone.service';
 import { MockEscrowProvider } from './mock-escrow.provider';
 import { SolanaEscrowProvider } from './solana-escrow.provider';
+import { LedgerModule } from '../ledger/ledger.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule],
+  imports: [PrismaModule, AuthModule, LedgerModule],
   controllers: [
     MilestoneController,
     EscrowActionController,

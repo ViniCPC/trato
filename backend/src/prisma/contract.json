@@ -8,6 +8,18 @@
       "model": "EscrowConfirmation",
       "namespace": "public"
     },
+    "ledger_accounts": {
+      "model": "LedgerAccount",
+      "namespace": "public"
+    },
+    "ledger_entries": {
+      "model": "LedgerEntry",
+      "namespace": "public"
+    },
+    "ledger_transactions": {
+      "model": "LedgerTransaction",
+      "namespace": "public"
+    },
     "milestones": {
       "model": "Milestone",
       "namespace": "public"
@@ -19,12 +31,54 @@
     "users": {
       "model": "User",
       "namespace": "public"
+    },
+    "withdrawals": {
+      "model": "Withdrawal",
+      "namespace": "public"
     }
   },
   "domain": {
     "namespaces": {
       "public": {
         "enum": {
+          "LedgerAccountType": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "EXTERNAL",
+                "value": "external"
+              },
+              {
+                "name": "ESCROW",
+                "value": "escrow"
+              },
+              {
+                "name": "FREELANCER_BALANCE",
+                "value": "freelancer_balance"
+              },
+              {
+                "name": "PAYOUT_CLEARING",
+                "value": "payout_clearing"
+              },
+              {
+                "name": "PLATFORM_REVENUE",
+                "value": "platform_revenue"
+              }
+            ]
+          },
+          "LedgerEntryDirection": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "DEBIT",
+                "value": "debit"
+              },
+              {
+                "name": "CREDIT",
+                "value": "credit"
+              }
+            ]
+          },
           "MilestoneStatus": {
             "codecId": "pg/text@1",
             "members": [
@@ -64,6 +118,47 @@
               {
                 "name": "COMPLETED",
                 "value": "completed"
+              },
+              {
+                "name": "CANCELLED",
+                "value": "cancelled"
+              }
+            ]
+          },
+          "WithdrawalStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "CREATED",
+                "value": "created"
+              },
+              {
+                "name": "QUOTED",
+                "value": "quoted"
+              },
+              {
+                "name": "AWAITING_SIGNATURE",
+                "value": "awaiting_signature"
+              },
+              {
+                "name": "SUBMITTED",
+                "value": "submitted"
+              },
+              {
+                "name": "PROCESSING",
+                "value": "processing"
+              },
+              {
+                "name": "PAID",
+                "value": "paid"
+              },
+              {
+                "name": "FAILED",
+                "value": "failed"
+              },
+              {
+                "name": "EXPIRED",
+                "value": "expired"
               },
               {
                 "name": "CANCELLED",
@@ -149,6 +244,322 @@
               },
               "namespaceId": "public",
               "table": "escrow_confirmations"
+            }
+          },
+          "LedgerAccount": {
+            "fields": {
+              "asset": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "key": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "ownerUserId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "type": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "LedgerAccountType",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              }
+            },
+            "relations": {
+              "entries": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "accountId"
+                  ]
+                },
+                "to": {
+                  "model": "LedgerEntry",
+                  "namespace": "public"
+                }
+              },
+              "ownerUser": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "ownerUserId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "asset": {
+                  "column": "asset"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "key": {
+                  "column": "key"
+                },
+                "ownerUserId": {
+                  "column": "ownerUserId"
+                },
+                "type": {
+                  "column": "type"
+                }
+              },
+              "namespaceId": "public",
+              "table": "ledger_accounts"
+            }
+          },
+          "LedgerEntry": {
+            "fields": {
+              "accountId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "amountBaseUnits": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "direction": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "LedgerEntryDirection",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "transactionId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "account": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "accountId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "LedgerAccount",
+                  "namespace": "public"
+                }
+              },
+              "transaction": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "transactionId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "LedgerTransaction",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "accountId": {
+                  "column": "accountId"
+                },
+                "amountBaseUnits": {
+                  "column": "amountBaseUnits"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "direction": {
+                  "column": "direction"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "transactionId": {
+                  "column": "transactionId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "ledger_entries"
+            }
+          },
+          "LedgerTransaction": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "description": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "eventType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "idempotencyKey": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "referenceId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "referenceType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "entries": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "transactionId"
+                  ]
+                },
+                "to": {
+                  "model": "LedgerEntry",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "description": {
+                  "column": "description"
+                },
+                "eventType": {
+                  "column": "eventType"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "idempotencyKey": {
+                  "column": "idempotencyKey"
+                },
+                "referenceId": {
+                  "column": "referenceId"
+                },
+                "referenceType": {
+                  "column": "referenceType"
+                }
+              },
+              "namespaceId": "public",
+              "table": "ledger_transactions"
             }
           },
           "Milestone": {
@@ -597,6 +1008,36 @@
                   "model": "Project",
                   "namespace": "public"
                 }
+              },
+              "ledgerAccounts": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "ownerUserId"
+                  ]
+                },
+                "to": {
+                  "model": "LedgerAccount",
+                  "namespace": "public"
+                }
+              },
+              "withdrawals": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "Withdrawal",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -625,6 +1066,290 @@
               },
               "namespaceId": "public",
               "table": "users"
+            }
+          },
+          "Withdrawal": {
+            "fields": {
+              "amountBaseUnits": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              },
+              "asset": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "cancelledAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "expiredAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "failedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "failureCode": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "failureReason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "feeBaseUnits": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              },
+              "fiatAmountMinor": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int8@1",
+                  "kind": "scalar"
+                }
+              },
+              "fiatCurrency": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "idempotencyKey": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "paidAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "pixKey": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "provider": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "providerQuoteReference": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "providerReference": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "quoteExpiresAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "WithdrawalStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "submittedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "txSignature": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "walletAddress": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "amountBaseUnits": {
+                  "column": "amountBaseUnits"
+                },
+                "asset": {
+                  "column": "asset"
+                },
+                "cancelledAt": {
+                  "column": "cancelledAt"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "expiredAt": {
+                  "column": "expiredAt"
+                },
+                "failedAt": {
+                  "column": "failedAt"
+                },
+                "failureCode": {
+                  "column": "failureCode"
+                },
+                "failureReason": {
+                  "column": "failureReason"
+                },
+                "feeBaseUnits": {
+                  "column": "feeBaseUnits"
+                },
+                "fiatAmountMinor": {
+                  "column": "fiatAmountMinor"
+                },
+                "fiatCurrency": {
+                  "column": "fiatCurrency"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "idempotencyKey": {
+                  "column": "idempotencyKey"
+                },
+                "paidAt": {
+                  "column": "paidAt"
+                },
+                "pixKey": {
+                  "column": "pixKey"
+                },
+                "provider": {
+                  "column": "provider"
+                },
+                "providerQuoteReference": {
+                  "column": "providerQuoteReference"
+                },
+                "providerReference": {
+                  "column": "providerReference"
+                },
+                "quoteExpiresAt": {
+                  "column": "quoteExpiresAt"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "submittedAt": {
+                  "column": "submittedAt"
+                },
+                "txSignature": {
+                  "column": "txSignature"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
+                },
+                "walletAddress": {
+                  "column": "walletAddress"
+                }
+              },
+              "namespaceId": "public",
+              "table": "withdrawals"
             }
           }
         }
@@ -712,6 +1437,304 @@
                   "columns": [
                     "milestoneId",
                     "action"
+                  ]
+                }
+              ]
+            },
+            "ledger_accounts": {
+              "checks": [
+                {
+                  "expression": "\"type\" IN ('external', 'escrow', 'freelancer_balance', 'payout_clearing', 'platform_revenue')",
+                  "name": "ledger_accounts_type_check_eee8d6ee",
+                  "prefix": "ledger_accounts_type_check"
+                }
+              ],
+              "columns": {
+                "asset": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "key": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "ownerUserId": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": true
+                },
+                "type": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "LedgerAccountType",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "ownerUserId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "ledger_accounts"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "ownerUserId"
+                  ],
+                  "name": "ledger_accounts_ownerUserId_idx_f93ae154",
+                  "prefix": "ledger_accounts_ownerUserId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "ownerUserId",
+                    "type",
+                    "asset"
+                  ],
+                  "name": "ledger_accounts_ownerUserId_type_asset_idx_eb0a5589",
+                  "prefix": "ledger_accounts_ownerUserId_type_asset_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "key"
+                  ]
+                }
+              ]
+            },
+            "ledger_entries": {
+              "checks": [
+                {
+                  "expression": "\"direction\" IN ('debit', 'credit')",
+                  "name": "ledger_entries_direction_check_6cfe4aa1",
+                  "prefix": "ledger_entries_direction_check"
+                }
+              ],
+              "columns": {
+                "accountId": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "amountBaseUnits": {
+                  "codecId": "pg/int8@1",
+                  "nativeType": "int8",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "direction": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "LedgerEntryDirection",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "transactionId": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "transactionId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "ledger_entries"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "ledger_transactions"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "accountId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "ledger_entries"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "ledger_accounts"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "accountId",
+                    "createdAt"
+                  ],
+                  "name": "ledger_entries_accountId_createdAt_idx_843b5d93",
+                  "prefix": "ledger_entries_accountId_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "accountId"
+                  ],
+                  "name": "ledger_entries_accountId_idx_cbfb3085",
+                  "prefix": "ledger_entries_accountId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "transactionId"
+                  ],
+                  "name": "ledger_entries_transactionId_idx_d3180832",
+                  "prefix": "ledger_entries_transactionId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "ledger_transactions": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "description": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "eventType": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "idempotencyKey": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "referenceId": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "referenceType": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "createdAt",
+                    "id"
+                  ],
+                  "name": "ledger_transactions_createdAt_id_idx_3855cff1",
+                  "prefix": "ledger_transactions_createdAt_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "referenceType",
+                    "referenceId"
+                  ],
+                  "name": "ledger_transactions_referenceType_referenceId_idx_d11658f3",
+                  "prefix": "ledger_transactions_referenceType_referenceId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "idempotencyKey"
                   ]
                 }
               ]
@@ -1106,9 +2129,267 @@
                   ]
                 }
               ]
+            },
+            "withdrawals": {
+              "checks": [
+                {
+                  "expression": "\"status\" IN ('created', 'quoted', 'awaiting_signature', 'submitted', 'processing', 'paid', 'failed', 'expired', 'cancelled')",
+                  "name": "withdrawals_status_check_e92bb63d",
+                  "prefix": "withdrawals_status_check"
+                }
+              ],
+              "columns": {
+                "amountBaseUnits": {
+                  "codecId": "pg/int8@1",
+                  "nativeType": "int8",
+                  "nullable": false
+                },
+                "asset": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "BRLP"
+                  },
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "cancelledAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "expiredAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "failedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "failureCode": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "failureReason": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "feeBaseUnits": {
+                  "codecId": "pg/int8@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "0"
+                  },
+                  "nativeType": "int8",
+                  "nullable": false
+                },
+                "fiatAmountMinor": {
+                  "codecId": "pg/int8@1",
+                  "nativeType": "int8",
+                  "nullable": false
+                },
+                "fiatCurrency": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "BRL"
+                  },
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "idempotencyKey": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "paidAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "pixKey": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "provider": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "pagfinance"
+                  },
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "providerQuoteReference": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "providerReference": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "quoteExpiresAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "created"
+                  },
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "WithdrawalStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "submittedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "txSignature": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "walletAddress": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "withdrawals"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "status",
+                    "createdAt"
+                  ],
+                  "name": "withdrawals_status_createdAt_idx_58610442",
+                  "prefix": "withdrawals_status_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "withdrawals_userId_idx_a489d58a",
+                  "prefix": "withdrawals_userId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId",
+                    "status"
+                  ],
+                  "name": "withdrawals_userId_status_idx_e4a128ba",
+                  "prefix": "withdrawals_userId_status_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "providerQuoteReference"
+                  ]
+                },
+                {
+                  "columns": [
+                    "providerReference"
+                  ]
+                },
+                {
+                  "columns": [
+                    "txSignature"
+                  ]
+                },
+                {
+                  "columns": [
+                    "userId",
+                    "idempotencyKey"
+                  ]
+                }
+              ]
             }
           },
           "valueSet": {
+            "LedgerAccountType": {
+              "kind": "valueSet",
+              "values": [
+                "external",
+                "escrow",
+                "freelancer_balance",
+                "payout_clearing",
+                "platform_revenue"
+              ]
+            },
+            "LedgerEntryDirection": {
+              "kind": "valueSet",
+              "values": [
+                "debit",
+                "credit"
+              ]
+            },
             "MilestoneStatus": {
               "kind": "valueSet",
               "values": [
@@ -1127,6 +2408,20 @@
                 "completed",
                 "cancelled"
               ]
+            },
+            "WithdrawalStatus": {
+              "kind": "valueSet",
+              "values": [
+                "created",
+                "quoted",
+                "awaiting_signature",
+                "submitted",
+                "processing",
+                "paid",
+                "failed",
+                "expired",
+                "cancelled"
+              ]
             }
           }
         },
@@ -1134,10 +2429,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "237a82a99a7d6158561a18b9dbd3a439bc988c60bba6eb704ca1bd80eb3f26e1"
+    "storageHash": "3cc67372ad7e59e3b1603cec1fb36cd84570ec239ac3e042091ff5c3d9f3c55b"
   },
   "execution": {
-    "executionHash": "0e2481673eea75be79b685993bd1c623cf3ef8c8f0b3e550b8c6f765cf1ffe3e",
+    "executionHash": "4516bf6f72a62552e07e9de3d31acf64a64ac78a35fe81b919d7658c6bdfb79d",
     "mutations": {
       "defaults": [
         {
@@ -1159,6 +2454,39 @@
           "ref": {
             "column": "id",
             "namespace": "public",
+            "table": "ledger_accounts"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "ledger_entries"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "ledger_transactions"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
             "table": "milestones"
           }
         },
@@ -1227,6 +2555,32 @@
             "column": "updatedAt",
             "namespace": "public",
             "table": "users"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "withdrawals"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "withdrawals"
           }
         }
       ]

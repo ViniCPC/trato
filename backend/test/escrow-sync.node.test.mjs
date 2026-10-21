@@ -72,6 +72,7 @@ test('sync persiste refund on-chain mesmo quando chamado pelo freelancer', async
   const service = new MilestoneActionService(
     prisma,
     { get: () => 'solana' },
+    { milestoneRefunded: async () => ({}) },
     escrow,
   );
 

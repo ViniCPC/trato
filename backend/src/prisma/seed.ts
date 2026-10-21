@@ -1,8 +1,11 @@
 import argon2 from 'argon2';
 
+import { LedgerService } from '../ledger/ledger.service';
 import { db } from './db';
+import type { PrismaService, Tx } from './prisma.service';
 
 const DEMO_PASSWORD = 'trato123';
+const ledger = new LedgerService({ db } as PrismaService);
 
 interface SeedUser {
   email: string;
@@ -65,26 +68,58 @@ async function upsertProject(project: SeedProject): Promise<void> {
   }
 
   for (const milestone of project.milestones) {
-    const current = await db.orm.public.Milestone.where({
-      projectId: savedProject.id,
-      sequence: milestone.sequence,
-    }).first();
-
-    if (current) {
-      await db.orm.public.Milestone.where({ id: current.id }).update({
-        title: milestone.title,
-        amountBaseUnits: milestone.amountBaseUnits,
-        status: milestone.status,
-      });
-    } else {
-      await db.orm.public.Milestone.create({
+    await db.transaction(async (tx) => {
+      const current = await tx.orm.public.Milestone.where({
         projectId: savedProject.id,
         sequence: milestone.sequence,
-        title: milestone.title,
-        amountBaseUnits: milestone.amountBaseUnits,
-        status: milestone.status,
-      });
-    }
+      }).first();
+
+      const savedMilestone = current
+        ? await tx.orm.public.Milestone.where({ id: current.id }).update({
+            title: milestone.title,
+            amountBaseUnits: milestone.amountBaseUnits,
+            status: milestone.status,
+          })
+        : await tx.orm.public.Milestone.create({
+            projectId: savedProject.id,
+            sequence: milestone.sequence,
+            title: milestone.title,
+            amountBaseUnits: milestone.amountBaseUnits,
+            status: milestone.status,
+          });
+
+      if (!savedMilestone) {
+        throw new Error(`Não foi possível criar a etapa ${milestone.title}.`);
+      }
+      await postSeedLedger(tx, project, savedMilestone);
+    });
+  }
+}
+
+async function postSeedLedger(
+  tx: Tx,
+  project: Pick<SeedProject, 'clientId' | 'freelancerId'>,
+  milestone: { id: string; amountBaseUnits: bigint; status: string },
+): Promise<void> {
+  if (milestone.status === 'pending') return;
+
+  await ledger.milestoneFunded(tx, {
+    milestoneId: milestone.id,
+    clientId: project.clientId,
+    amountBaseUnits: milestone.amountBaseUnits,
+  });
+  if (milestone.status === 'released') {
+    await ledger.milestoneReleased(tx, {
+      milestoneId: milestone.id,
+      freelancerId: project.freelancerId,
+      amountBaseUnits: milestone.amountBaseUnits,
+    });
+  } else if (milestone.status === 'refunded') {
+    await ledger.milestoneRefunded(tx, {
+      milestoneId: milestone.id,
+      clientId: project.clientId,
+      amountBaseUnits: milestone.amountBaseUnits,
+    });
   }
 }
 

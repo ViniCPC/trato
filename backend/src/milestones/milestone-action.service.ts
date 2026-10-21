@@ -8,8 +8,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { LedgerService } from '../ledger/ledger.service';
 
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService, type Tx } from '../prisma/prisma.service';
 import {
   ESCROW_PROVIDER,
   type EscrowAction,
@@ -67,6 +68,7 @@ export class MilestoneActionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly ledger: LedgerService,
     @Inject(ESCROW_PROVIDER) private readonly escrow: EscrowProvider,
   ) {}
 
@@ -114,6 +116,9 @@ export class MilestoneActionService {
       initial.milestone.status === ACTION_STATUS[action] &&
       this.getSignature(initial.milestone, action) === signature
     ) {
+      await this.prisma.db.transaction((tx) =>
+        this.postLedger(tx, action, initial),
+      );
       return this.serialize(initial.milestone, signature);
     }
     if (initial.project.status !== 'active') {
@@ -181,6 +186,8 @@ export class MilestoneActionService {
             signature,
           });
         }
+
+        await this.postLedger(tx, action, initial);
 
         if (action === 'release' || action === 'claim') {
           const remaining = await tx.orm.public.Milestone.where({
@@ -343,5 +350,30 @@ export class MilestoneActionService {
         if (now - time >= 30_000) this.lastSyncByMilestone.delete(entry);
       }
     }
+  }
+
+  private postLedger(tx: Tx, action: EscrowAction, record: ActionRecord) {
+    if (action === 'fund') {
+      return this.ledger.milestoneFunded(tx, {
+        milestoneId: record.milestone.id,
+        clientId: record.project.clientId,
+        amountBaseUnits: record.milestone.amountBaseUnits,
+      });
+    }
+    if (action === 'release' || action === 'claim') {
+      return this.ledger.milestoneReleased(tx, {
+        milestoneId: record.milestone.id,
+        freelancerId: record.project.freelancerId,
+        amountBaseUnits: record.milestone.amountBaseUnits,
+      });
+    }
+    if (action === 'refund') {
+      return this.ledger.milestoneRefunded(tx, {
+        milestoneId: record.milestone.id,
+        clientId: record.project.clientId,
+        amountBaseUnits: record.milestone.amountBaseUnits,
+      });
+    }
+    return Promise.resolve(undefined);
   }
 }

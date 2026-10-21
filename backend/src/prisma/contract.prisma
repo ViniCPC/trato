@@ -9,6 +9,37 @@ enum ProjectStatus {
   CANCELLED = "cancelled"
 }
 
+enum WithdrawalStatus {
+  @@type("pg/text@1")
+
+  CREATED            = "created"
+  QUOTED             = "quoted"
+  AWAITING_SIGNATURE = "awaiting_signature"
+  SUBMITTED          = "submitted"
+  PROCESSING         = "processing"
+  PAID               = "paid"
+  FAILED              = "failed"
+  EXPIRED             = "expired"
+  CANCELLED           = "cancelled"
+}
+
+enum LedgerAccountType {
+  @@type("pg/text@1")
+
+  EXTERNAL           = "external"
+  ESCROW             = "escrow"
+  FREELANCER_BALANCE = "freelancer_balance"
+  PAYOUT_CLEARING    = "payout_clearing"
+  PLATFORM_REVENUE   = "platform_revenue"
+}
+
+enum LedgerEntryDirection {
+  @@type("pg/text@1")
+
+  DEBIT  = "debit"
+  CREDIT = "credit"
+}
+
 enum MilestoneStatus {
   @@type("pg/text@1")
 
@@ -18,7 +49,6 @@ enum MilestoneStatus {
   RELEASED  = "released"
   REFUNDED  = "refunded"
 }
-
 model User {
   id            Uuid    @id @default(uuid())
   name          String
@@ -28,6 +58,8 @@ model User {
 
   clientProjects     Project[] @relation("ProjectClient")
   freelancerProjects Project[] @relation("ProjectFreelancer")
+  withdrawals        Withdrawal[]
+  ledgerAccounts     LedgerAccount[]
 
   createdAt TimestamptzString @default(now())
   updatedAt temporal.updatedAtString()
@@ -104,4 +136,105 @@ model EscrowConfirmation {
 
   @@unique([milestoneId, action])
   @@map("escrow_confirmations")
+}
+
+model Withdrawal {
+  id Uuid @id @default(uuid())
+
+  userId Uuid
+  user   User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  idempotencyKey String
+
+  amountBaseUnits BigInt
+  feeBaseUnits    BigInt @default(0)
+  fiatAmountMinor BigInt
+  asset          String @default("BRLP")
+  fiatCurrency   String @default("BRL")
+
+  pixKey        String
+  walletAddress String
+
+  provider String @default("pagfinance")
+
+  providerQuoteReference String? @unique
+  providerReference      String? @unique
+  txSignature            String? @unique
+
+  quoteExpiresAt TimestamptzString?
+
+  status WithdrawalStatus @default(CREATED)
+
+  failureCode   String?
+  failureReason String?
+
+  submittedAt TimestamptzString?
+  paidAt      TimestamptzString?
+  failedAt    TimestamptzString?
+  expiredAt   TimestamptzString?
+  cancelledAt TimestamptzString?
+
+  createdAt TimestamptzString @default(now())
+  updatedAt temporal.updatedAtString()
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@unique([userId, idempotencyKey])
+
+  @@map("withdrawals")
+}
+
+model LedgerAccount {
+  id Uuid @id @default(uuid())
+
+  key   String            @unique
+  type  LedgerAccountType
+  asset String
+
+  ownerUserId Uuid?
+  ownerUser   User? @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
+
+  entries LedgerEntry[]
+
+  createdAt TimestamptzString @default(now())
+
+  @@index([ownerUserId, type, asset])
+  @@map("ledger_accounts")
+}
+
+model LedgerTransaction {
+  id Uuid @id @default(uuid())
+
+  eventType      String
+  idempotencyKey String @unique
+  referenceType  String
+  referenceId    Uuid
+  description    String?
+
+  entries LedgerEntry[]
+
+  createdAt TimestamptzString @default(now())
+
+  @@index([referenceType, referenceId])
+  @@index([createdAt, id])
+  @@map("ledger_transactions")
+}
+
+model LedgerEntry {
+  id Uuid @id @default(uuid())
+
+  transactionId Uuid
+  transaction   LedgerTransaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+
+  accountId Uuid
+  account   LedgerAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  direction       LedgerEntryDirection
+  amountBaseUnits BigInt
+
+  createdAt TimestamptzString @default(now())
+
+  @@index([transactionId])
+  @@index([accountId, createdAt])
+  @@map("ledger_entries")
 }

@@ -1,0 +1,1088 @@
+[
+  {
+    "id": "table.ledger_accounts",
+    "label": "Create table \"ledger_accounts\"",
+    "summary": "Creates table \"ledger_accounts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ledger_accounts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ledger_accounts\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_accounts\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ledger_accounts\"",
+        "sql": "CREATE TABLE \"public\".\"ledger_accounts\" (\n  \"asset\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"key\" text NOT NULL,\n  \"ownerUserId\" uuid,\n  \"type\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"ledger_accounts_type_check_eee8d6ee\" CHECK (\"type\" IN ('external', 'escrow', 'freelancer_balance', 'payout_clearing', 'platform_revenue'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ledger_accounts\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_accounts\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.ledger_entries",
+    "label": "Create table \"ledger_entries\"",
+    "summary": "Creates table \"ledger_entries\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ledger_entries"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ledger_entries\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_entries\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ledger_entries\"",
+        "sql": "CREATE TABLE \"public\".\"ledger_entries\" (\n  \"accountId\" uuid NOT NULL,\n  \"amountBaseUnits\" int8 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"direction\" text NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"transactionId\" uuid NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"ledger_entries_direction_check_6cfe4aa1\" CHECK (\"direction\" IN ('debit', 'credit')),\n  CONSTRAINT \"ledger_entries_amount_positive_check\" CHECK (\"amountBaseUnits\" > 0)\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ledger_entries\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_entries\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.ledger_transactions",
+    "label": "Create table \"ledger_transactions\"",
+    "summary": "Creates table \"ledger_transactions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ledger_transactions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"ledger_transactions\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_transactions\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"ledger_transactions\"",
+        "sql": "CREATE TABLE \"public\".\"ledger_transactions\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"description\" text,\n  \"eventType\" text NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"idempotencyKey\" text NOT NULL,\n  \"referenceId\" uuid NOT NULL,\n  \"referenceType\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"ledger_transactions\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_transactions\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.withdrawals",
+    "label": "Create table \"withdrawals\"",
+    "summary": "Creates table \"withdrawals\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "withdrawals"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"withdrawals\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"withdrawals\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"withdrawals\"",
+        "sql": "CREATE TABLE \"public\".\"withdrawals\" (\n  \"amountBaseUnits\" int8 NOT NULL,\n  \"asset\" text DEFAULT 'BRLP' NOT NULL,\n  \"cancelledAt\" timestamptz,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"expiredAt\" timestamptz,\n  \"failedAt\" timestamptz,\n  \"failureCode\" text,\n  \"failureReason\" text,\n  \"feeBaseUnits\" int8 DEFAULT '0'::int8 NOT NULL,\n  \"fiatAmountMinor\" int8 NOT NULL,\n  \"fiatCurrency\" text DEFAULT 'BRL' NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"idempotencyKey\" text NOT NULL,\n  \"paidAt\" timestamptz,\n  \"pixKey\" text NOT NULL,\n  \"provider\" text DEFAULT 'pagfinance' NOT NULL,\n  \"providerQuoteReference\" text,\n  \"providerReference\" text,\n  \"quoteExpiresAt\" timestamptz,\n  \"status\" text DEFAULT 'created' NOT NULL,\n  \"submittedAt\" timestamptz,\n  \"txSignature\" text,\n  \"updatedAt\" timestamptz NOT NULL,\n  \"userId\" uuid NOT NULL,\n  \"walletAddress\" text NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"withdrawals_status_check_e92bb63d\" CHECK (\"status\" IN ('created', 'quoted', 'awaiting_signature', 'submitted', 'processing', 'paid', 'failed', 'expired', 'cancelled')),\n  CONSTRAINT \"withdrawals_amounts_check\" CHECK (\"amountBaseUnits\" > 0 AND \"feeBaseUnits\" >= 0 AND \"fiatAmountMinor\" >= 0)\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"withdrawals\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"withdrawals\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.ledger_accounts.ledger_accounts_key_key",
+    "label": "Add unique constraint on \"ledger_accounts\" (key)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "ledger_accounts_key_key",
+        "table": "ledger_accounts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"ledger_accounts_key_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ledger_accounts_key_key",
+          "public",
+          "\"public\".\"ledger_accounts\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"ledger_accounts_key_key\"",
+        "sql": "ALTER TABLE \"public\".\"ledger_accounts\" ADD CONSTRAINT \"ledger_accounts_key_key\" UNIQUE (\"key\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"ledger_accounts_key_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ledger_accounts_key_key",
+          "public",
+          "\"public\".\"ledger_accounts\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.ledger_transactions.ledger_transactions_idempotencyKey_key",
+    "label": "Add unique constraint on \"ledger_transactions\" (idempotencyKey)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "ledger_transactions_idempotencyKey_key",
+        "table": "ledger_transactions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"ledger_transactions_idempotencyKey_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ledger_transactions_idempotencyKey_key",
+          "public",
+          "\"public\".\"ledger_transactions\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"ledger_transactions_idempotencyKey_key\"",
+        "sql": "ALTER TABLE \"public\".\"ledger_transactions\" ADD CONSTRAINT \"ledger_transactions_idempotencyKey_key\" UNIQUE (\"idempotencyKey\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"ledger_transactions_idempotencyKey_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ledger_transactions_idempotencyKey_key",
+          "public",
+          "\"public\".\"ledger_transactions\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.withdrawals.withdrawals_providerQuoteReference_key",
+    "label": "Add unique constraint on \"withdrawals\" (providerQuoteReference)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "withdrawals_providerQuoteReference_key",
+        "table": "withdrawals"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"withdrawals_providerQuoteReference_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "withdrawals_providerQuoteReference_key",
+          "public",
+          "\"public\".\"withdrawals\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"withdrawals_providerQuoteReference_key\"",
+        "sql": "ALTER TABLE \"public\".\"withdrawals\" ADD CONSTRAINT \"withdrawals_providerQuoteReference_key\" UNIQUE (\"providerQuoteReference\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"withdrawals_providerQuoteReference_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "withdrawals_providerQuoteReference_key",
+          "public",
+          "\"public\".\"withdrawals\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.withdrawals.withdrawals_providerReference_key",
+    "label": "Add unique constraint on \"withdrawals\" (providerReference)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "withdrawals_providerReference_key",
+        "table": "withdrawals"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"withdrawals_providerReference_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "withdrawals_providerReference_key",
+          "public",
+          "\"public\".\"withdrawals\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"withdrawals_providerReference_key\"",
+        "sql": "ALTER TABLE \"public\".\"withdrawals\" ADD CONSTRAINT \"withdrawals_providerReference_key\" UNIQUE (\"providerReference\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"withdrawals_providerReference_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "withdrawals_providerReference_key",
+          "public",
+          "\"public\".\"withdrawals\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.withdrawals.withdrawals_txSignature_key",
+    "label": "Add unique constraint on \"withdrawals\" (txSignature)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "withdrawals_txSignature_key",
+        "table": "withdrawals"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"withdrawals_txSignature_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "withdrawals_txSignature_key",
+          "public",
+          "\"public\".\"withdrawals\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"withdrawals_txSignature_key\"",
+        "sql": "ALTER TABLE \"public\".\"withdrawals\" ADD CONSTRAINT \"withdrawals_txSignature_key\" UNIQUE (\"txSignature\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"withdrawals_txSignature_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "withdrawals_txSignature_key",
+          "public",
+          "\"public\".\"withdrawals\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.withdrawals.withdrawals_userId_idempotencyKey_key",
+    "label": "Add unique constraint on \"withdrawals\" (userId, idempotencyKey)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "withdrawals_userId_idempotencyKey_key",
+        "table": "withdrawals"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"withdrawals_userId_idempotencyKey_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "withdrawals_userId_idempotencyKey_key",
+          "public",
+          "\"public\".\"withdrawals\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"withdrawals_userId_idempotencyKey_key\"",
+        "sql": "ALTER TABLE \"public\".\"withdrawals\" ADD CONSTRAINT \"withdrawals_userId_idempotencyKey_key\" UNIQUE (\"userId\", \"idempotencyKey\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"withdrawals_userId_idempotencyKey_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "withdrawals_userId_idempotencyKey_key",
+          "public",
+          "\"public\".\"withdrawals\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ledger_accounts.ledger_accounts_ownerUserId_idx_f93ae154",
+    "label": "Create index \"ledger_accounts_ownerUserId_idx_f93ae154\" on \"ledger_accounts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ledger_accounts_ownerUserId_idx_f93ae154",
+        "table": "ledger_accounts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ledger_accounts_ownerUserId_idx_f93ae154\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_accounts_ownerUserId_idx_f93ae154\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ledger_accounts_ownerUserId_idx_f93ae154\"",
+        "sql": "CREATE INDEX \"ledger_accounts_ownerUserId_idx_f93ae154\" ON \"public\".\"ledger_accounts\" (\"ownerUserId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ledger_accounts_ownerUserId_idx_f93ae154\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_accounts_ownerUserId_idx_f93ae154\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ledger_accounts.ledger_accounts_ownerUserId_type_asset_idx_eb0a5589",
+    "label": "Create index \"ledger_accounts_ownerUserId_type_asset_idx_eb0a5589\" on \"ledger_accounts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ledger_accounts_ownerUserId_type_asset_idx_eb0a5589",
+        "table": "ledger_accounts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ledger_accounts_ownerUserId_type_asset_idx_eb0a5589\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_accounts_ownerUserId_type_asset_idx_eb0a5589\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ledger_accounts_ownerUserId_type_asset_idx_eb0a5589\"",
+        "sql": "CREATE INDEX \"ledger_accounts_ownerUserId_type_asset_idx_eb0a5589\" ON \"public\".\"ledger_accounts\" (\"ownerUserId\", \"type\", \"asset\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ledger_accounts_ownerUserId_type_asset_idx_eb0a5589\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_accounts_ownerUserId_type_asset_idx_eb0a5589\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ledger_entries.ledger_entries_accountId_createdAt_idx_843b5d93",
+    "label": "Create index \"ledger_entries_accountId_createdAt_idx_843b5d93\" on \"ledger_entries\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ledger_entries_accountId_createdAt_idx_843b5d93",
+        "table": "ledger_entries"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ledger_entries_accountId_createdAt_idx_843b5d93\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_entries_accountId_createdAt_idx_843b5d93\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ledger_entries_accountId_createdAt_idx_843b5d93\"",
+        "sql": "CREATE INDEX \"ledger_entries_accountId_createdAt_idx_843b5d93\" ON \"public\".\"ledger_entries\" (\"accountId\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ledger_entries_accountId_createdAt_idx_843b5d93\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_entries_accountId_createdAt_idx_843b5d93\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ledger_entries.ledger_entries_accountId_idx_cbfb3085",
+    "label": "Create index \"ledger_entries_accountId_idx_cbfb3085\" on \"ledger_entries\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ledger_entries_accountId_idx_cbfb3085",
+        "table": "ledger_entries"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ledger_entries_accountId_idx_cbfb3085\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_entries_accountId_idx_cbfb3085\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ledger_entries_accountId_idx_cbfb3085\"",
+        "sql": "CREATE INDEX \"ledger_entries_accountId_idx_cbfb3085\" ON \"public\".\"ledger_entries\" (\"accountId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ledger_entries_accountId_idx_cbfb3085\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_entries_accountId_idx_cbfb3085\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ledger_entries.ledger_entries_transactionId_idx_d3180832",
+    "label": "Create index \"ledger_entries_transactionId_idx_d3180832\" on \"ledger_entries\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ledger_entries_transactionId_idx_d3180832",
+        "table": "ledger_entries"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ledger_entries_transactionId_idx_d3180832\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_entries_transactionId_idx_d3180832\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ledger_entries_transactionId_idx_d3180832\"",
+        "sql": "CREATE INDEX \"ledger_entries_transactionId_idx_d3180832\" ON \"public\".\"ledger_entries\" (\"transactionId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ledger_entries_transactionId_idx_d3180832\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_entries_transactionId_idx_d3180832\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ledger_transactions.ledger_transactions_createdAt_id_idx_3855cff1",
+    "label": "Create index \"ledger_transactions_createdAt_id_idx_3855cff1\" on \"ledger_transactions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ledger_transactions_createdAt_id_idx_3855cff1",
+        "table": "ledger_transactions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ledger_transactions_createdAt_id_idx_3855cff1\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_transactions_createdAt_id_idx_3855cff1\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ledger_transactions_createdAt_id_idx_3855cff1\"",
+        "sql": "CREATE INDEX \"ledger_transactions_createdAt_id_idx_3855cff1\" ON \"public\".\"ledger_transactions\" (\"createdAt\", \"id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ledger_transactions_createdAt_id_idx_3855cff1\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_transactions_createdAt_id_idx_3855cff1\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.ledger_transactions.ledger_transactions_referenceType_referenceId_idx_d11658f3",
+    "label": "Create index \"ledger_transactions_referenceType_referenceId_idx_d11658f3\" on \"ledger_transactions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "ledger_transactions_referenceType_referenceId_idx_d11658f3",
+        "table": "ledger_transactions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"ledger_transactions_referenceType_referenceId_idx_d11658f3\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_transactions_referenceType_referenceId_idx_d11658f3\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"ledger_transactions_referenceType_referenceId_idx_d11658f3\"",
+        "sql": "CREATE INDEX \"ledger_transactions_referenceType_referenceId_idx_d11658f3\" ON \"public\".\"ledger_transactions\" (\"referenceType\", \"referenceId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"ledger_transactions_referenceType_referenceId_idx_d11658f3\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"ledger_transactions_referenceType_referenceId_idx_d11658f3\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.withdrawals.withdrawals_status_createdAt_idx_58610442",
+    "label": "Create index \"withdrawals_status_createdAt_idx_58610442\" on \"withdrawals\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "withdrawals_status_createdAt_idx_58610442",
+        "table": "withdrawals"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"withdrawals_status_createdAt_idx_58610442\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"withdrawals_status_createdAt_idx_58610442\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"withdrawals_status_createdAt_idx_58610442\"",
+        "sql": "CREATE INDEX \"withdrawals_status_createdAt_idx_58610442\" ON \"public\".\"withdrawals\" (\"status\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"withdrawals_status_createdAt_idx_58610442\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"withdrawals_status_createdAt_idx_58610442\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.withdrawals.withdrawals_userId_idx_a489d58a",
+    "label": "Create index \"withdrawals_userId_idx_a489d58a\" on \"withdrawals\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "withdrawals_userId_idx_a489d58a",
+        "table": "withdrawals"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"withdrawals_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"withdrawals_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"withdrawals_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"withdrawals_userId_idx_a489d58a\" ON \"public\".\"withdrawals\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"withdrawals_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"withdrawals_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.withdrawals.withdrawals_userId_status_idx_e4a128ba",
+    "label": "Create index \"withdrawals_userId_status_idx_e4a128ba\" on \"withdrawals\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "withdrawals_userId_status_idx_e4a128ba",
+        "table": "withdrawals"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"withdrawals_userId_status_idx_e4a128ba\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"withdrawals_userId_status_idx_e4a128ba\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"withdrawals_userId_status_idx_e4a128ba\"",
+        "sql": "CREATE INDEX \"withdrawals_userId_status_idx_e4a128ba\" ON \"public\".\"withdrawals\" (\"userId\", \"status\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"withdrawals_userId_status_idx_e4a128ba\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"withdrawals_userId_status_idx_e4a128ba\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ledger_accounts.ledger_accounts_ownerUserId_fkey",
+    "label": "Add foreign key \"ledger_accounts_ownerUserId_fkey\" on \"ledger_accounts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ledger_accounts_ownerUserId_fkey",
+        "table": "ledger_accounts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ledger_accounts_ownerUserId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ledger_accounts_ownerUserId_fkey",
+          "public",
+          "\"public\".\"ledger_accounts\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ledger_accounts_ownerUserId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ledger_accounts\"\nADD CONSTRAINT \"ledger_accounts_ownerUserId_fkey\"\nFOREIGN KEY (\"ownerUserId\")\nREFERENCES \"public\".\"users\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ledger_accounts_ownerUserId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ledger_accounts_ownerUserId_fkey",
+          "public",
+          "\"public\".\"ledger_accounts\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ledger_entries.ledger_entries_transactionId_fkey",
+    "label": "Add foreign key \"ledger_entries_transactionId_fkey\" on \"ledger_entries\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ledger_entries_transactionId_fkey",
+        "table": "ledger_entries"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ledger_entries_transactionId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ledger_entries_transactionId_fkey",
+          "public",
+          "\"public\".\"ledger_entries\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ledger_entries_transactionId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ledger_entries\"\nADD CONSTRAINT \"ledger_entries_transactionId_fkey\"\nFOREIGN KEY (\"transactionId\")\nREFERENCES \"public\".\"ledger_transactions\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ledger_entries_transactionId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ledger_entries_transactionId_fkey",
+          "public",
+          "\"public\".\"ledger_entries\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.ledger_entries.ledger_entries_accountId_fkey",
+    "label": "Add foreign key \"ledger_entries_accountId_fkey\" on \"ledger_entries\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "ledger_entries_accountId_fkey",
+        "table": "ledger_entries"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"ledger_entries_accountId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ledger_entries_accountId_fkey",
+          "public",
+          "\"public\".\"ledger_entries\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"ledger_entries_accountId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"ledger_entries\"\nADD CONSTRAINT \"ledger_entries_accountId_fkey\"\nFOREIGN KEY (\"accountId\")\nREFERENCES \"public\".\"ledger_accounts\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"ledger_entries_accountId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "ledger_entries_accountId_fkey",
+          "public",
+          "\"public\".\"ledger_entries\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.withdrawals.withdrawals_userId_fkey",
+    "label": "Add foreign key \"withdrawals_userId_fkey\" on \"withdrawals\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "withdrawals_userId_fkey",
+        "table": "withdrawals"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"withdrawals_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "withdrawals_userId_fkey",
+          "public",
+          "\"public\".\"withdrawals\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"withdrawals_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"withdrawals\"\nADD CONSTRAINT \"withdrawals_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"users\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"withdrawals_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "withdrawals_userId_fkey",
+          "public",
+          "\"public\".\"withdrawals\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "custom.backfill_ledger_from_milestones",
+    "label": "Backfill ledger from existing milestones",
+    "summary": "Creates balanced funded, released, and refunded events for historical milestones",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ledger_transactions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ledger tables are available for idempotent backfill",
+        "sql": "SELECT TRUE AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "create historical ledger accounts",
+        "sql": "INSERT INTO \"public\".\"ledger_accounts\"\n                (\"id\", \"key\", \"type\", \"asset\", \"ownerUserId\")\n              SELECT gen_random_uuid(), 'external:' || p.\"clientId\"::text || ':BRLP',\n                'external', 'BRLP', p.\"clientId\"\n              FROM \"public\".\"milestones\" m\n              JOIN \"public\".\"projects\" p ON p.\"id\" = m.\"projectId\"\n              WHERE m.\"status\" IN ('funded', 'submitted', 'released', 'refunded')\n              ON CONFLICT (\"key\") DO NOTHING",
+        "params": []
+      },
+      {
+        "description": "create historical system escrow account",
+        "sql": "INSERT INTO \"public\".\"ledger_accounts\"\n                (\"id\", \"key\", \"type\", \"asset\", \"ownerUserId\")\n              SELECT gen_random_uuid(), 'escrow:system:BRLP', 'escrow', 'BRLP', NULL\n              WHERE EXISTS (\n                SELECT 1 FROM \"public\".\"milestones\"\n                WHERE \"status\" IN ('funded', 'submitted', 'released', 'refunded')\n              )\n              ON CONFLICT (\"key\") DO NOTHING",
+        "params": []
+      },
+      {
+        "description": "create historical freelancer balance accounts",
+        "sql": "INSERT INTO \"public\".\"ledger_accounts\"\n                (\"id\", \"key\", \"type\", \"asset\", \"ownerUserId\")\n              SELECT gen_random_uuid(),\n                'freelancer_balance:' || p.\"freelancerId\"::text || ':BRLP',\n                'freelancer_balance', 'BRLP', p.\"freelancerId\"\n              FROM \"public\".\"milestones\" m\n              JOIN \"public\".\"projects\" p ON p.\"id\" = m.\"projectId\"\n              WHERE m.\"status\" = 'released'\n              ON CONFLICT (\"key\") DO NOTHING",
+        "params": []
+      },
+      {
+        "description": "create historical ledger transactions",
+        "sql": "INSERT INTO \"public\".\"ledger_transactions\"\n                (\"id\", \"eventType\", \"idempotencyKey\", \"referenceType\", \"referenceId\")\n              SELECT gen_random_uuid(), 'milestone_funded',\n                'milestone:' || m.\"id\"::text || ':funded', 'milestone', m.\"id\"\n              FROM \"public\".\"milestones\" m\n              WHERE m.\"status\" IN ('funded', 'submitted', 'released', 'refunded')\n              ON CONFLICT (\"idempotencyKey\") DO NOTHING",
+        "params": []
+      },
+      {
+        "description": "create historical release and refund transactions",
+        "sql": "INSERT INTO \"public\".\"ledger_transactions\"\n                (\"id\", \"eventType\", \"idempotencyKey\", \"referenceType\", \"referenceId\")\n              SELECT gen_random_uuid(),\n                CASE WHEN m.\"status\" = 'released'\n                  THEN 'milestone_released' ELSE 'milestone_refunded' END,\n                'milestone:' || m.\"id\"::text ||\n                  CASE WHEN m.\"status\" = 'released' THEN ':released' ELSE ':refunded' END,\n                'milestone', m.\"id\"\n              FROM \"public\".\"milestones\" m\n              WHERE m.\"status\" IN ('released', 'refunded')\n              ON CONFLICT (\"idempotencyKey\") DO NOTHING",
+        "params": []
+      },
+      {
+        "description": "create balanced historical ledger entries",
+        "sql": "WITH expected AS (\n                SELECT t.\"id\" AS \"transactionId\", external_account.\"id\" AS \"accountId\",\n                  'debit' AS \"direction\", m.\"amountBaseUnits\"\n                FROM \"public\".\"milestones\" m\n                JOIN \"public\".\"projects\" p ON p.\"id\" = m.\"projectId\"\n                JOIN \"public\".\"ledger_transactions\" t\n                  ON t.\"idempotencyKey\" = 'milestone:' || m.\"id\"::text || ':funded'\n                JOIN \"public\".\"ledger_accounts\" external_account\n                  ON external_account.\"key\" = 'external:' || p.\"clientId\"::text || ':BRLP'\n                WHERE m.\"status\" IN ('funded', 'submitted', 'released', 'refunded')\n                UNION ALL\n                SELECT t.\"id\", escrow_account.\"id\", 'credit', m.\"amountBaseUnits\"\n                FROM \"public\".\"milestones\" m\n                JOIN \"public\".\"ledger_transactions\" t\n                  ON t.\"idempotencyKey\" = 'milestone:' || m.\"id\"::text || ':funded'\n                JOIN \"public\".\"ledger_accounts\" escrow_account\n                  ON escrow_account.\"key\" = 'escrow:system:BRLP'\n                WHERE m.\"status\" IN ('funded', 'submitted', 'released', 'refunded')\n                UNION ALL\n                SELECT t.\"id\", escrow_account.\"id\", 'debit', m.\"amountBaseUnits\"\n                FROM \"public\".\"milestones\" m\n                JOIN \"public\".\"ledger_transactions\" t\n                  ON t.\"idempotencyKey\" = 'milestone:' || m.\"id\"::text || ':released'\n                JOIN \"public\".\"ledger_accounts\" escrow_account\n                  ON escrow_account.\"key\" = 'escrow:system:BRLP'\n                WHERE m.\"status\" = 'released'\n                UNION ALL\n                SELECT t.\"id\", freelancer_account.\"id\", 'credit', m.\"amountBaseUnits\"\n                FROM \"public\".\"milestones\" m\n                JOIN \"public\".\"projects\" p ON p.\"id\" = m.\"projectId\"\n                JOIN \"public\".\"ledger_transactions\" t\n                  ON t.\"idempotencyKey\" = 'milestone:' || m.\"id\"::text || ':released'\n                JOIN \"public\".\"ledger_accounts\" freelancer_account\n                  ON freelancer_account.\"key\" =\n                    'freelancer_balance:' || p.\"freelancerId\"::text || ':BRLP'\n                WHERE m.\"status\" = 'released'\n                UNION ALL\n                SELECT t.\"id\", escrow_account.\"id\", 'debit', m.\"amountBaseUnits\"\n                FROM \"public\".\"milestones\" m\n                JOIN \"public\".\"ledger_transactions\" t\n                  ON t.\"idempotencyKey\" = 'milestone:' || m.\"id\"::text || ':refunded'\n                JOIN \"public\".\"ledger_accounts\" escrow_account\n                  ON escrow_account.\"key\" = 'escrow:system:BRLP'\n                WHERE m.\"status\" = 'refunded'\n                UNION ALL\n                SELECT t.\"id\", external_account.\"id\", 'credit', m.\"amountBaseUnits\"\n                FROM \"public\".\"milestones\" m\n                JOIN \"public\".\"projects\" p ON p.\"id\" = m.\"projectId\"\n                JOIN \"public\".\"ledger_transactions\" t\n                  ON t.\"idempotencyKey\" = 'milestone:' || m.\"id\"::text || ':refunded'\n                JOIN \"public\".\"ledger_accounts\" external_account\n                  ON external_account.\"key\" = 'external:' || p.\"clientId\"::text || ':BRLP'\n                WHERE m.\"status\" = 'refunded'\n              )\n              INSERT INTO \"public\".\"ledger_entries\"\n                (\"id\", \"transactionId\", \"accountId\", \"direction\", \"amountBaseUnits\")\n              SELECT gen_random_uuid(), expected.\"transactionId\", expected.\"accountId\",\n                expected.\"direction\", expected.\"amountBaseUnits\"\n              FROM expected\n              WHERE NOT EXISTS (\n                SELECT 1 FROM \"public\".\"ledger_entries\" existing\n                WHERE existing.\"transactionId\" = expected.\"transactionId\"\n                  AND existing.\"accountId\" = expected.\"accountId\"\n                  AND existing.\"direction\" = expected.\"direction\"\n              )",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify every historical financial state was backfilled",
+        "sql": "SELECT NOT EXISTS (\n                SELECT 1 FROM \"public\".\"milestones\" m\n                WHERE m.\"status\" IN ('funded', 'submitted', 'released', 'refunded')\n                  AND NOT EXISTS (\n                    SELECT 1 FROM \"public\".\"ledger_transactions\" t\n                    WHERE t.\"idempotencyKey\" = 'milestone:' || m.\"id\"::text || ':funded'\n                  )\n                UNION ALL\n                SELECT 1 FROM \"public\".\"milestones\" m\n                WHERE m.\"status\" = 'released'\n                  AND NOT EXISTS (\n                    SELECT 1 FROM \"public\".\"ledger_transactions\" t\n                    WHERE t.\"idempotencyKey\" = 'milestone:' || m.\"id\"::text || ':released'\n                  )\n                UNION ALL\n                SELECT 1 FROM \"public\".\"milestones\" m\n                WHERE m.\"status\" = 'refunded'\n                  AND NOT EXISTS (\n                    SELECT 1 FROM \"public\".\"ledger_transactions\" t\n                    WHERE t.\"idempotencyKey\" = 'milestone:' || m.\"id\"::text || ':refunded'\n                  )\n                UNION ALL\n                SELECT 1\n                FROM \"public\".\"ledger_transactions\" t\n                LEFT JOIN \"public\".\"ledger_entries\" e\n                  ON e.\"transactionId\" = t.\"id\"\n                GROUP BY t.\"id\"\n                HAVING COUNT(e.\"id\") < 2 OR\n                  COALESCE(SUM(CASE WHEN e.\"direction\" = 'debit'\n                    THEN e.\"amountBaseUnits\" ELSE -e.\"amountBaseUnits\" END), 0) <> 0\n              ) AS \"result\"",
+        "params": []
+      }
+    ]
+  },
+  {
+    "id": "custom.ledger_immutability_and_balance",
+    "label": "Enforce ledger immutability and double-entry balance",
+    "summary": "Adds deferred balance validation and blocks updates/deletes on ledger records",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "ledger_transactions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure ledger integrity triggers are missing",
+        "sql": "SELECT NOT EXISTS (\n              SELECT 1 FROM pg_trigger\n              WHERE tgname IN (\n                'ledger_transactions_immutable',\n                'ledger_entries_immutable',\n                'ledger_transactions_balanced',\n                'ledger_entries_balanced'\n              ) AND NOT tgisinternal\n            ) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "create immutable ledger trigger function",
+        "sql": "CREATE FUNCTION \"public\".\"prevent_ledger_mutation\"()\n              RETURNS trigger\n              LANGUAGE plpgsql\n              AS $$\n              BEGIN\n                RAISE EXCEPTION 'ledger records are immutable' USING ERRCODE = '55000';\n              END;\n              $$",
+        "params": []
+      },
+      {
+        "description": "create deferred ledger balance trigger function",
+        "sql": "CREATE FUNCTION \"public\".\"validate_ledger_transaction_balance\"()\n              RETURNS trigger\n              LANGUAGE plpgsql\n              AS $$\n              DECLARE\n                transaction_id uuid;\n                entry_count bigint;\n                balance bigint;\n              BEGIN\n                IF TG_TABLE_NAME = 'ledger_entries' THEN\n                  transaction_id := NEW.\"transactionId\";\n                ELSE\n                  transaction_id := NEW.\"id\";\n                END IF;\n\n                SELECT COUNT(*),\n                  COALESCE(SUM(CASE WHEN \"direction\" = 'debit'\n                    THEN \"amountBaseUnits\" ELSE -\"amountBaseUnits\" END), 0)\n                INTO entry_count, balance\n                FROM \"public\".\"ledger_entries\"\n                WHERE \"transactionId\" = transaction_id;\n\n                IF entry_count < 2 OR balance <> 0 THEN\n                  RAISE EXCEPTION 'ledger transaction % is unbalanced', transaction_id\n                    USING ERRCODE = '23514';\n                END IF;\n                RETURN NEW;\n              END;\n              $$",
+        "params": []
+      },
+      {
+        "description": "block ledger transaction updates and deletes",
+        "sql": "CREATE TRIGGER \"ledger_transactions_immutable\"\n              BEFORE UPDATE OR DELETE ON \"public\".\"ledger_transactions\"\n              FOR EACH ROW EXECUTE FUNCTION \"public\".\"prevent_ledger_mutation\"()",
+        "params": []
+      },
+      {
+        "description": "block ledger entry updates and deletes",
+        "sql": "CREATE TRIGGER \"ledger_entries_immutable\"\n              BEFORE UPDATE OR DELETE ON \"public\".\"ledger_entries\"\n              FOR EACH ROW EXECUTE FUNCTION \"public\".\"prevent_ledger_mutation\"()",
+        "params": []
+      },
+      {
+        "description": "validate double-entry balance at transaction commit",
+        "sql": "CREATE CONSTRAINT TRIGGER \"ledger_transactions_balanced\"\n              AFTER INSERT ON \"public\".\"ledger_transactions\"\n              DEFERRABLE INITIALLY DEFERRED\n              FOR EACH ROW EXECUTE FUNCTION \"public\".\"validate_ledger_transaction_balance\"()",
+        "params": []
+      },
+      {
+        "description": "reject later entries that would unbalance a transaction",
+        "sql": "CREATE CONSTRAINT TRIGGER \"ledger_entries_balanced\"\n              AFTER INSERT ON \"public\".\"ledger_entries\"\n              DEFERRABLE INITIALLY DEFERRED\n              FOR EACH ROW EXECUTE FUNCTION \"public\".\"validate_ledger_transaction_balance\"()",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify all ledger integrity triggers exist",
+        "sql": "SELECT COUNT(*) = 4 AS \"result\"\n              FROM pg_trigger\n              WHERE tgname IN (\n                'ledger_transactions_immutable',\n                'ledger_entries_immutable',\n                'ledger_transactions_balanced',\n                'ledger_entries_balanced'\n              ) AND NOT tgisinternal",
+        "params": []
+      }
+    ]
+  }
+]

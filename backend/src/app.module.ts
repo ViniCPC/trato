@@ -11,6 +11,8 @@ import { MilestoneModule } from './milestones/milestone.module';
 import { HttpExceptionFilter } from './common/http-exception.filter';
 import { validateEnvironment } from './config/environment';
 import { DevFaucetModule } from './dev-faucet/dev-faucet.module';
+import { LedgerModule } from './ledger/ledger.module';
+import { WithdrawalModule } from './withdrawals/withdrawal.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { DevFaucetModule } from './dev-faucet/dev-faucet.module';
     ProjectModule,
     ProjectLifecycleModule,
     MilestoneModule,
+    LedgerModule,
+    WithdrawalModule,
     ...(process.env.NODE_ENV === 'production' ? [] : [DevFaucetModule]),
   ],
   controllers: [AppController],
