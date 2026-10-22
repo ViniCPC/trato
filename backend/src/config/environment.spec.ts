@@ -22,7 +22,7 @@ describe('validateEnvironment', () => {
         ...base,
         ESCROW_DRIVER: 'solana',
         SOLANA_RPC_URL: 'https://api.devnet.solana.com',
-        SOLANA_PROGRAM_ID: '973yrLGt8Jro3ak66GxTyBXBYens5di54txDxJFGJNxG',
+        SOLANA_PROGRAM_ID: '5jqtbGSBvTACNYzjeWFsRnXLYFwZDMZ9qjV8Spt4jgqn',
         SOLANA_TOKEN_MINT: '11111111111111111111111111111111',
       }).ESCROW_DRIVER,
     ).toBe('solana');

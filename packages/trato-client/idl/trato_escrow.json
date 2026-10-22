@@ -1,5 +1,5 @@
 {
-  "address": "973yrLGt8Jro3ak66GxTyBXBYens5di54txDxJFGJNxG",
+  "address": "5jqtbGSBvTACNYzjeWFsRnXLYFwZDMZ9qjV8Spt4jgqn",
   "metadata": {
     "name": "trato_escrow",
     "version": "0.1.0",
@@ -449,7 +449,7 @@
         },
         {
           "name": "program",
-          "address": "973yrLGt8Jro3ak66GxTyBXBYens5di54txDxJFGJNxG"
+          "address": "5jqtbGSBvTACNYzjeWFsRnXLYFwZDMZ9qjV8Spt4jgqn"
         },
         {
           "name": "program_data"

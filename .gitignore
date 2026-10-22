@@ -7,4 +7,8 @@ devnet.json
 *.keypair.json
 **/node_modules/
 **/dist/
+/.agents/
+/.claude/
+/.cursor/
+/.devin/
 

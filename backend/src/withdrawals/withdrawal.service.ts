@@ -32,6 +32,7 @@ import {
 } from './withdrawal-state-machine';
 
 const MAX_BIGINT = 9_223_372_036_854_775_807n;
+const MOCK_WALLET_ADDRESS = '11111111111111111111111111111111';
 
 interface CursorValue {
   createdAt: string;
@@ -207,7 +208,10 @@ export class WithdrawalService {
       return await this.prisma.db.transaction(async (tx) => {
         const user = await tx.orm.public.User.where({ id: userId }).first();
         if (!user) throw new NotFoundException('Usuário não encontrado');
-        if (!user.walletAddress) {
+        const walletAddress =
+          user.walletAddress ??
+          (this.provider.name === 'mock' ? MOCK_WALLET_ADDRESS : null);
+        if (!walletAddress) {
           throw new ConflictException('Vincule sua carteira antes de sacar');
         }
 
@@ -227,9 +231,9 @@ export class WithdrawalService {
           idempotencyKey,
           amountBaseUnits,
           feeBaseUnits: 0n,
-          fiatAmountMinor: amountBaseUnits,
+          fiatAmountMinor: amountBaseUnits / 10_000n,
           pixKey,
-          walletAddress: user.walletAddress,
+          walletAddress,
           provider: this.provider.name,
           status: 'created',
         });
@@ -492,33 +496,32 @@ export class WithdrawalService {
     target: PayoutProviderStatus['status'],
   ): WithdrawalStatus {
     if (current === target) return current;
-    const actions: WithdrawalAction[] = [];
+    let status = current;
 
     if (
-      current === 'awaiting_signature' &&
+      status === 'awaiting_signature' &&
       target !== 'expired' &&
       target !== 'cancelled' &&
       target !== 'failed'
     ) {
-      actions.push('submit');
-      current = 'submitted';
+      status = this.transition(status, 'submit');
     }
-    if (target === 'processing' && current === 'submitted') {
-      actions.push('mark_processing');
+    if (target === status) return status;
+
+    if (target === 'processing' && status === 'submitted') {
+      return this.transition(status, 'mark_processing');
     } else if (target === 'paid') {
-      actions.push('pay');
+      return this.transition(status, 'pay');
     } else if (target === 'failed') {
-      actions.push('fail');
+      return this.transition(status, 'fail');
     } else if (target === 'expired') {
-      actions.push('expire');
+      return this.transition(status, 'expire');
     } else if (target === 'cancelled') {
-      actions.push('cancel');
-    } else if (target === 'submitted' && current !== 'submitted') {
-      actions.push('submit');
+      return this.transition(status, 'cancel');
+    } else if (target === 'submitted') {
+      return this.transition(status, 'submit');
     }
 
-    let status = current;
-    for (const action of actions) status = this.transition(status, action);
     return status;
   }
 
@@ -569,6 +572,9 @@ export class WithdrawalService {
 
   private throwProviderError(error: unknown): never {
     if (error instanceof PayoutProviderError) {
+      if (error.code === 'PAYOUT_INSUFFICIENT_ONCHAIN_BALANCE') {
+        throw new ConflictException(error.message);
+      }
       if (error.retryable) {
         throw new ServiceUnavailableException(error.message);
       }

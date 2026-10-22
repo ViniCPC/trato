@@ -21,9 +21,7 @@ type AuthenticatedRequest = {
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
 export class ProjectLifecycleController {
-  constructor(
-    private readonly lifecycle: ProjectLifecycleService,
-  ) {}
+  constructor(private readonly lifecycle: ProjectLifecycleService) {}
 
   @Post(':id/activate')
   @HttpCode(HttpStatus.OK)
@@ -31,10 +29,7 @@ export class ProjectLifecycleController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() request: AuthenticatedRequest,
   ) {
-    return this.lifecycle.activateProject(
-      id,
-      request.user.id,
-    );
+    return this.lifecycle.activateProject(id, request.user.id);
   }
 
   @Post(':id/cancel')
@@ -43,9 +38,6 @@ export class ProjectLifecycleController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() request: AuthenticatedRequest,
   ) {
-    return this.lifecycle.cancelProject(
-      id,
-      request.user.id,
-    );
+    return this.lifecycle.cancelProject(id, request.user.id);
   }
 }

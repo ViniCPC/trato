@@ -1,4 +1,10 @@
-import { baseUnitsToBrl, brlInputToBaseUnits, maskBrlInput } from './money';
+import {
+  baseUnitsToBrl,
+  baseUnitsToToken,
+  brlInputToBaseUnits,
+  maskBrlInput,
+  minorUnitsToBrl,
+} from './money';
 
 describe('money utils', () => {
   describe('brlInputToBaseUnits', () => {
@@ -34,6 +40,17 @@ describe('money utils', () => {
 
     it('rejects non-integer strings', () => {
       expect(() => baseUnitsToBrl('1.50')).toThrowError(RangeError);
+    });
+  });
+
+  describe('token and fiat display', () => {
+    it('formats configured token base units exactly', () => {
+      expect(baseUnitsToToken('1500000000')).toBe('1.500,00 BRLP');
+      expect(baseUnitsToToken('1234567')).toBe('1,234567 BRLP');
+    });
+
+    it('formats PagFinance minor units as BRL', () => {
+      expect(minorUnitsToBrl('10250')).toContain('102,50');
     });
   });
 

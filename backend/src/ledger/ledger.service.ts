@@ -375,6 +375,7 @@ export class LedgerService {
         asset: ref.asset,
         ownerUserId: ref.ownerUserId ?? null,
       },
+      conflictOn: { key },
     });
   }
 

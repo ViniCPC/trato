@@ -6,7 +6,7 @@ describe('MockPayoutProvider', () => {
     const input = {
       withdrawalId: '11111111-1111-4111-8111-111111111111',
       userId: '22222222-2222-4222-8222-222222222222',
-      amountBaseUnits: 123n,
+      amountBaseUnits: 1_230_000n,
       asset: 'BRLP' as const,
       fiatCurrency: 'BRL' as const,
       pixKey: 'freelancer@example.com',
@@ -14,7 +14,7 @@ describe('MockPayoutProvider', () => {
     };
 
     const quote = await provider.quote(input);
-    expect(quote.amountBaseUnits).toBe(123n);
+    expect(quote.amountBaseUnits).toBe(1_230_000n);
     expect(quote.fiatAmountMinor).toBe(123n);
 
     const prepared = await provider.prepare({
@@ -36,6 +36,23 @@ describe('MockPayoutProvider', () => {
     });
     await expect(
       provider.getStatus({ providerReference: prepared.providerReference }),
+    ).resolves.toMatchObject({
+      status: 'paid',
+    });
+  });
+
+  it('retoma um saque mock submetido depois de reiniciar o provider', async () => {
+    const provider = new MockPayoutProvider();
+    const providerReference =
+      'mock_payout_11111111-1111-4111-8111-111111111111';
+
+    await expect(
+      provider.getStatus({ providerReference }),
+    ).resolves.toMatchObject({
+      status: 'processing',
+    });
+    await expect(
+      provider.getStatus({ providerReference }),
     ).resolves.toMatchObject({
       status: 'paid',
     });

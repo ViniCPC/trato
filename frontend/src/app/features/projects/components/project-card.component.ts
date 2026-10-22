@@ -11,7 +11,7 @@ import { ProjectListItem } from '../models/project.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a
-      class="group focus-visible:ring-brand-200 block rounded-card focus-visible:ring-3 focus-visible:outline-none"
+      class="group block rounded-card focus-visible:ring-3 focus-visible:ring-brand-200 focus-visible:outline-none"
       [routerLink]="['/projects', project().id]"
     >
       <app-card>

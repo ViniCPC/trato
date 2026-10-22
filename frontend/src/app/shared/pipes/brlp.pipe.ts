@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { baseUnitsToBrl } from '../utils/money';
+import { baseUnitsToToken } from '../utils/money';
 
 @Pipe({
   name: 'brlp',
@@ -8,6 +8,6 @@ import { baseUnitsToBrl } from '../utils/money';
 })
 export class BrlpPipe implements PipeTransform {
   transform(baseUnits: string): string {
-    return baseUnitsToBrl(baseUnits);
+    return baseUnitsToToken(baseUnits);
   }
 }

@@ -8,7 +8,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("973yrLGt8Jro3ak66GxTyBXBYens5di54txDxJFGJNxG");
+declare_id!("5jqtbGSBvTACNYzjeWFsRnXLYFwZDMZ9qjV8Spt4jgqn");
 
 #[program]
 pub mod trato_escrow {

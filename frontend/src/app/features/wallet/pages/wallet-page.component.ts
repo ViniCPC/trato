@@ -71,16 +71,18 @@ import { ButtonComponent } from '../../../shared/ui/button/button.component';
 
           @if (!environment.production && linkedToConnectedWallet()) {
             <div class="mt-6 border-t border-ink-100 pt-6">
-              <p class="text-sm font-semibold text-ink-900">BRLP de desenvolvimento</p>
+              <p class="text-sm font-semibold text-ink-900">
+                {{ environment.tokenSymbol }} de desenvolvimento
+              </p>
               <p class="mt-1 text-sm text-ink-500">
-                Receba 100 BRLP na devnet para testar o financiamento.
+                Receba 100 {{ environment.tokenSymbol }} na devnet para testar o financiamento.
               </p>
               <app-button
                 class="mt-4"
                 variant="secondary"
                 [loading]="faucetLoading()"
                 (pressed)="requestFaucet()"
-                >Pedir BRLP de teste</app-button
+                >Pedir {{ environment.tokenSymbol }} de teste</app-button
               >
             </div>
           }
@@ -150,7 +152,7 @@ export class WalletPageComponent {
     this.faucetLoading.set(true);
     try {
       await firstValueFrom(this.http.post(`${environment.apiUrl}/dev/faucet`, {}));
-      this.toast.show('100 BRLP enviados', { tone: 'success' });
+      this.toast.show(`100 ${environment.tokenSymbol} enviados`, { tone: 'success' });
     } finally {
       this.faucetLoading.set(false);
     }

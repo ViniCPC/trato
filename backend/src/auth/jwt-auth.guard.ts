@@ -17,9 +17,7 @@ export class JwtAuthGuard implements CanActivate {
       user?: { id: string };
     }>();
 
-    const match = /^Bearer ([^\s]+)$/.exec(
-      request.headers.authorization ?? '',
-    );
+    const match = /^Bearer ([^\s]+)$/.exec(request.headers.authorization ?? '');
 
     if (!match) {
       throw new UnauthorizedException('Token não informado');

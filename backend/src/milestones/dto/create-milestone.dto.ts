@@ -8,7 +8,7 @@ import {
 } from 'class-validator';
 
 export class CreateMilestoneDto {
-  @Transform(({ value }) =>
+  @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,
   )
   @IsString()

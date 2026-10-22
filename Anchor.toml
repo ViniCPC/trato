@@ -7,10 +7,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-trato_escrow = "973yrLGt8Jro3ak66GxTyBXBYens5di54txDxJFGJNxG"
+trato_escrow = "5jqtbGSBvTACNYzjeWFsRnXLYFwZDMZ9qjV8Spt4jgqn"
 
 [programs.devnet]
-trato_escrow = "973yrLGt8Jro3ak66GxTyBXBYens5di54txDxJFGJNxG"
+trato_escrow = "5jqtbGSBvTACNYzjeWFsRnXLYFwZDMZ9qjV8Spt4jgqn"
 
 [provider]
 cluster = "Localnet"

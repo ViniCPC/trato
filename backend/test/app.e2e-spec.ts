@@ -1,11 +1,11 @@
-import { INestApplication } from '@nestjs/common';
+import { type ExecutionContext, type INestApplication } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
-import request from 'supertest';
+import request, { type Response } from 'supertest';
 
 import { JwtAuthGuard } from '../src/auth/jwt-auth.guard';
 import { HttpExceptionFilter } from '../src/common/http-exception.filter';
-import { EscrowProvider } from '../src/milestones/escrow.provider';
+import { ESCROW_PROVIDER } from '../src/milestones/escrow.provider';
 import { MilestoneActionService } from '../src/milestones/milestone-action.service';
 import { MilestoneController } from '../src/milestones/milestone.controller';
 import { MilestoneService } from '../src/milestones/milestone.service';
@@ -24,7 +24,25 @@ const projectId = '33333333-3333-4333-8333-333333333333';
 const firstId = '44444444-4444-4444-8444-444444444444';
 const secondId = '55555555-5555-4555-8555-555555555555';
 
-type RecordRow = Record<string, any>;
+type RecordRow = Record<string, unknown>;
+type QueryFields = {
+  status: { neq: (status: string) => void };
+};
+type TestRequest = {
+  headers: Record<string, string | string[] | undefined>;
+  user?: { id: string | string[] | undefined };
+};
+type ApiBody = {
+  statusCode?: number;
+  status?: string;
+  amountBaseUnits?: string;
+  signature?: string;
+};
+
+function responseBody(response: Response): ApiBody {
+  const body: unknown = response.body;
+  return body !== null && typeof body === 'object' ? body : {};
+}
 
 function createMemoryPrisma(milestoneIds: string[]) {
   const project: RecordRow = {
@@ -58,8 +76,8 @@ function createMemoryPrisma(milestoneIds: string[]) {
           (!excludedStatus || row.status !== excludedStatus),
       );
 
-    return {
-      where(filter: RecordRow | ((fields: any) => void)) {
+    const builder = {
+      where(filter: RecordRow | ((fields: QueryFields) => void)) {
         if (typeof filter === 'function') {
           filter({
             status: {
@@ -71,25 +89,26 @@ function createMemoryPrisma(milestoneIds: string[]) {
         } else {
           Object.assign(conditions, filter);
         }
-        return this;
+        return builder;
       },
       select() {
-        return this;
+        return builder;
       },
-      async first() {
-        return matching() ?? null;
+      first(): Promise<RecordRow | null> {
+        return Promise.resolve(matching() ?? null);
       },
-      async update(data: RecordRow) {
+      update(data: RecordRow): Promise<RecordRow | null> {
         const row = matching();
-        if (!row) return null;
+        if (!row) return Promise.resolve(null);
         Object.assign(row, data);
-        return { ...row };
+        return Promise.resolve({ ...row });
       },
     };
+    return builder;
   }
 
   const tx = {
-    query: async () => [],
+    query: () => Promise.resolve([]),
     sql: { public: { projects: { columns: { id: {} } } } },
     orm: {
       public: {
@@ -101,7 +120,7 @@ function createMemoryPrisma(milestoneIds: string[]) {
   const prisma = {
     db: {
       raw: { sql: () => ({ returnsRow: () => ({ build: () => ({}) }) }) },
-      transaction: async (run: (transaction: typeof tx) => Promise<unknown>) =>
+      transaction: (run: (transaction: typeof tx) => Promise<unknown>) =>
         run(tx),
     },
   };
@@ -120,15 +139,15 @@ describe('Milestone actions (e2e)', () => {
       providers: [
         MilestoneActionService,
         { provide: MilestoneService, useValue: {} },
-        { provide: EscrowProvider, useClass: MockEscrowProvider },
+        { provide: ESCROW_PROVIDER, useClass: MockEscrowProvider },
         { provide: PrismaService, useValue: store.prisma },
         { provide: APP_FILTER, useClass: HttpExceptionFilter },
       ],
     })
       .overrideGuard(JwtAuthGuard)
       .useValue({
-        canActivate: (context: any) => {
-          const httpRequest = context.switchToHttp().getRequest();
+        canActivate: (context: ExecutionContext) => {
+          const httpRequest = context.switchToHttp().getRequest<TestRequest>();
           httpRequest.user = { id: httpRequest.headers['x-user-id'] };
           return true;
         },
@@ -139,7 +158,8 @@ describe('Milestone actions (e2e)', () => {
   }
 
   function action(milestoneId: string, name: string, userId: string) {
-    return request(app.getHttpServer())
+    const server: unknown = app.getHttpServer();
+    return request(server as Parameters<typeof request>[0])
       .post(`/projects/${projectId}/milestones/${milestoneId}/${name}`)
       .set('x-user-id', userId);
   }
@@ -152,26 +172,27 @@ describe('Milestone actions (e2e)', () => {
     await start([firstId]);
 
     const forbidden = await action(firstId, 'fund', freelancerId).expect(403);
-    expect(forbidden.body).toMatchObject({ statusCode: 403 });
+    expect(responseBody(forbidden)).toMatchObject({ statusCode: 403 });
     expect(store.milestones[0].status).toBe('pending');
 
     const funded = await action(firstId, 'fund', clientId).expect(200);
-    expect(funded.body).toMatchObject({
+    const fundedBody = responseBody(funded);
+    expect(fundedBody).toMatchObject({
       status: 'funded',
       amountBaseUnits: '100',
     });
-    expect(funded.body.signature).toMatch(/^mock_/);
-    expect(store.milestones[0].fundTxSignature).toBe(funded.body.signature);
+    expect(fundedBody.signature).toMatch(/^mock_/);
+    expect(store.milestones[0].fundTxSignature).toBe(fundedBody.signature);
 
     const submitted = await action(firstId, 'submit', freelancerId).expect(200);
-    expect(submitted.body.status).toBe('submitted');
-    expect(submitted.body.signature).toMatch(/^mock_/);
+    const submittedBody = responseBody(submitted);
+    expect(submittedBody.status).toBe('submitted');
+    expect(submittedBody.signature).toMatch(/^mock_/);
 
     const released = await action(firstId, 'release', clientId).expect(200);
-    expect(released.body.status).toBe('released');
-    expect(store.milestones[0].releaseTxSignature).toBe(
-      released.body.signature,
-    );
+    const releasedBody = responseBody(released);
+    expect(releasedBody.status).toBe('released');
+    expect(store.milestones[0].releaseTxSignature).toBe(releasedBody.signature);
     expect(store.project.status).toBe('completed');
   });
 
@@ -194,11 +215,12 @@ describe('Milestone actions (e2e)', () => {
 
     await action(firstId, 'fund', clientId).expect(200);
     const refunded = await action(firstId, 'refund', clientId).expect(200);
-    expect(refunded.body.status).toBe('refunded');
-    expect(store.milestones[0].refundTxSignature).toBe(refunded.body.signature);
+    const refundedBody = responseBody(refunded);
+    expect(refundedBody.status).toBe('refunded');
+    expect(store.milestones[0].refundTxSignature).toBe(refundedBody.signature);
     expect(store.project.status).toBe('active');
 
     const repeated = await action(firstId, 'refund', clientId).expect(409);
-    expect(repeated.body).toMatchObject({ statusCode: 409 });
+    expect(responseBody(repeated)).toMatchObject({ statusCode: 409 });
   });
 });

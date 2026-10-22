@@ -20,6 +20,7 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import { finalize, map, startWith } from 'rxjs';
 
+import { environment } from '../../../../environments/environment';
 import { ToastService } from '../../../core/services/toast.service';
 import { BrlpPipe } from '../../../shared/pipes/brlp.pipe';
 import { ButtonComponent } from '../../../shared/ui/button/button.component';
@@ -193,10 +194,10 @@ const positiveMoneyValidator: ValidatorFn = (
                       <div class="relative">
                         <span
                           class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-sm font-medium text-ink-500"
-                          >R$</span
+                          >{{ tokenSymbol }}</span
                         >
                         <input
-                          class="h-12 w-full rounded-lg border bg-white pr-3.5 pl-11 text-base text-ink-900 tabular-nums placeholder:text-ink-400 focus:border-brand-500 focus:ring-3 focus:ring-brand-100 focus:outline-none"
+                          class="h-12 w-full rounded-lg border bg-white pr-3.5 pl-16 text-base text-ink-900 tabular-nums placeholder:text-ink-400 focus:border-brand-500 focus:ring-3 focus:ring-brand-100 focus:outline-none"
                           [class.border-rose-400]="amountError(milestone.controls.amount)"
                           [class.border-ink-200]="!amountError(milestone.controls.amount)"
                           [formControl]="milestone.controls.amount"
@@ -280,6 +281,7 @@ export class ProjectFormPageComponent implements PendingChangesComponent {
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
   private saved = false;
+  protected readonly tokenSymbol = environment.tokenSymbol;
 
   readonly form = new FormGroup({
     title: new FormControl('', {

@@ -51,7 +51,7 @@ A imagem usada é `solanafoundation/anchor:v1.0.2`, fixada à versão de `Anchor
 
 ## Devnet
 
-O endereço esperado do programa é `973yrLGt8Jro3ak66GxTyBXBYens5di54txDxJFGJNxG`. O arquivo `target/deploy/trato_escrow-keypair.json` é segredo operacional ignorado pelo Git; guarde um backup seguro antes do primeiro deploy.
+O endereço esperado do programa é `5jqtbGSBvTACNYzjeWFsRnXLYFwZDMZ9qjV8Spt4jgqn`. O arquivo `target/deploy/trato_escrow-keypair.json` é segredo operacional ignorado pelo Git; guarde um backup seguro antes do primeiro deploy.
 
 1. Copie `.env.solana.example` para `.env.solana` e carregue as variáveis no terminal.
 2. Compile com `anchor build --ignore-keys`.
@@ -68,7 +68,12 @@ solana program deploy target/deploy/trato_escrow.so --program-id target/deploy/t
 npm run setup:devnet
 ```
 
-O script cria um mint de 6 casas quando necessário, cria ATAs ausentes e só completa cada carteira até `BRLP_TEST_BALANCE`. O resultado local fica em `.devnet/trato.json`; copie o mint para `SOLANA_TOKEN_MINT` no backend. Reexecutar o script não cria outro mint nem duplica o saldo alvo.
+O script cria um mint de 6 casas quando necessário, cria ATAs ausentes, completa
+cada carteira até `BRLP_TEST_BALANCE` e inicializa/atualiza a config on-chain com
+`FREELANCER_WALLET`, `ESCROW_MAX_AMOUNT` e `CLAIM_DELAY_SECONDS`. O resultado local
+fica em `.devnet/trato.json`; copie o mint para `SOLANA_TOKEN_MINT` no backend.
+Reexecutar o script não cria outro mint nem duplica o saldo alvo. O ensaio completo
+está em [`docs/runbooks/devnet-e2e.md`](docs/runbooks/devnet-e2e.md).
 
 Para usar a rede, configure `ESCROW_DRIVER=solana`, `SOLANA_RPC_URL`, `SOLANA_PROGRAM_ID` e `SOLANA_TOKEN_MINT`. O backend falha no boot se a configuração Solana estiver incompleta. `/dev/faucet` existe somente fora de produção, tem limite de uma chamada por minuto por usuário e usa `FAUCET_AUTHORITY_SECRET`.
 
@@ -84,5 +89,8 @@ O MVP persiste o JWT no `localStorage`. É um trade-off consciente: o token fica
 - Frontend: `npm run build` e `npm test -- --watch=false --browsers=ChromeHeadless` em `frontend/`.
 - Backend: `npm run build` e `npm test -- --runInBand` em `backend/`.
 - Programa: `cargo test -p trato-escrow` e `anchor build --ignore-keys`.
+
+Na raiz, `npm test` executa Jest, os testes `node --test`, o cliente compartilhado
+e o frontend em ChromeHeadless.
 
 O Docker da API usa o contexto da raiz para incluir `packages/trato-client`. Antes de `docker compose up --build`, defina `JWT_SECRET` com pelo menos 32 bytes.

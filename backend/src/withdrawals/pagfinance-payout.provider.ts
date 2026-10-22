@@ -79,8 +79,13 @@ export class PagFinancePayoutProvider implements PayoutProvider {
   }
 
   async quote(input: PayoutQuoteInput): Promise<PayoutQuote> {
+    const { tokenProgram, decimals } = await this.getMintDetails();
+    await this.assertWalletBalance(
+      input.walletAddress,
+      tokenProgram,
+      input.amountBaseUnits,
+    );
     const token = await this.issueUserToken(input.userId, input.walletAddress);
-    const { decimals } = await this.getMintDetails();
     const amount = this.formatUnits(input.amountBaseUnits, decimals);
     const data = await this.request('/cashout/quote', {
       method: 'POST',
@@ -525,6 +530,77 @@ export class PagFinancePayoutProvider implements PayoutProvider {
         true,
       );
     }
+  }
+
+  private async assertWalletBalance(
+    walletValue: string,
+    tokenProgram: PublicKey,
+    requiredAmount: bigint,
+  ): Promise<void> {
+    try {
+      const wallet = new PublicKey(walletValue);
+      const tokenAccount = await this.findAssociatedTokenAddress(
+        wallet,
+        tokenProgram,
+      );
+      const account = await this.connection.getAccountInfo(
+        tokenAccount,
+        'confirmed',
+      );
+      if (!account) {
+        throw this.insufficientWalletBalance();
+      }
+
+      const accountData: unknown = account.data;
+      if (!(accountData instanceof Uint8Array)) {
+        throw new PayoutProviderError(
+          'SOLANA_INVALID_TOKEN_ACCOUNT',
+          'A conta BRLP da carteira vinculada é inválida',
+          false,
+        );
+      }
+      const data = Buffer.from(accountData);
+      const accountMint = data.subarray(0, 32);
+      const accountWallet = data.subarray(32, 64);
+      if (
+        !account.owner.equals(tokenProgram) ||
+        data.length < 72 ||
+        !this.bytesEqual(accountMint, this.mint.toBytes()) ||
+        !this.bytesEqual(accountWallet, wallet.toBytes())
+      ) {
+        throw new PayoutProviderError(
+          'SOLANA_INVALID_TOKEN_ACCOUNT',
+          'A conta BRLP da carteira vinculada é inválida',
+          false,
+        );
+      }
+
+      if (data.readBigUInt64LE(64) < requiredAmount) {
+        throw this.insufficientWalletBalance();
+      }
+    } catch (error) {
+      if (error instanceof PayoutProviderError) throw error;
+      throw new PayoutProviderError(
+        'SOLANA_RPC_UNAVAILABLE',
+        'Não foi possível consultar o saldo BRLP na Solana',
+        true,
+      );
+    }
+  }
+
+  private insufficientWalletBalance(): PayoutProviderError {
+    return new PayoutProviderError(
+      'PAYOUT_INSUFFICIENT_ONCHAIN_BALANCE',
+      'Saldo BRLP insuficiente na carteira vinculada para este saque',
+      false,
+    );
+  }
+
+  private bytesEqual(actual: Uint8Array, expected: Uint8Array): boolean {
+    return (
+      actual.length === expected.length &&
+      actual.every((value, index) => value === expected[index])
+    );
   }
 
   private async findAssociatedTokenAddress(

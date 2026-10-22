@@ -69,14 +69,21 @@ test('PagFinance serializa dinheiro sem number e converte a resposta para bigint
         }[name];
       },
     });
+    const mint = new PublicKey('11111111111111111111111111111111');
+    const wallet = new PublicKey(input.walletAddress);
+    const tokenProgram = new PublicKey(
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    );
     const mintData = Buffer.alloc(82);
     mintData[44] = 6;
+    const tokenAccountData = Buffer.alloc(165);
+    tokenAccountData.set(mint.toBytes(), 0);
+    tokenAccountData.set(wallet.toBytes(), 32);
+    tokenAccountData.writeBigUInt64LE(200_000_000n, 64);
     Object.assign(provider.connection, {
-      getAccountInfo: async () => ({
-        owner: new (await import('@solana/web3.js')).PublicKey(
-          'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
-        ),
-        data: mintData,
+      getAccountInfo: async (address) => ({
+        owner: tokenProgram,
+        data: address.equals(mint) ? mintData : tokenAccountData,
       }),
     });
     const quote = await provider.quote(input);
@@ -86,6 +93,59 @@ test('PagFinance serializa dinheiro sem number e converte a resposta para bigint
     assert.equal(quote.fiatAmountMinor, 10_000n);
     assert.equal(received.options.headers.Authorization, 'Bearer user-jwt');
     assert.match(received.options.body, /"amount":100(?:,|})/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('PagFinance rejeita cotação quando o saldo BRLP on-chain é insuficiente', async () => {
+  let requestedPagFinance = false;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    requestedPagFinance = true;
+    throw new Error('não deveria chamar a PagFinance');
+  };
+
+  try {
+    const provider = new PagFinancePayoutProvider({
+      get(name) {
+        return {
+          PAGFINANCE_BASE_URL: 'https://sandbox.pagfinance.test',
+          PAGFINANCE_API_TOKEN: 'secret-token',
+          PAGFINANCE_BRLP_ASSET_ID: '7',
+          PAGFINANCE_APP_NAME: 'trato',
+          PAGFINANCE_APP_DOMAIN: 'trato.test',
+          PAGFINANCE_APP_VERSION: '1.0.0',
+          SOLANA_RPC_URL: 'http://127.0.0.1:8899',
+          SOLANA_TOKEN_MINT: '11111111111111111111111111111111',
+          PAGFINANCE_TIMEOUT_MS: 1000,
+        }[name];
+      },
+    });
+    const mint = new PublicKey('11111111111111111111111111111111');
+    const wallet = new PublicKey(input.walletAddress);
+    const tokenProgram = new PublicKey(
+      'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    );
+    const mintData = Buffer.alloc(82);
+    mintData[44] = 6;
+    const tokenAccountData = Buffer.alloc(165);
+    tokenAccountData.set(mint.toBytes(), 0);
+    tokenAccountData.set(wallet.toBytes(), 32);
+    tokenAccountData.writeBigUInt64LE(99_999_999n, 64);
+    Object.assign(provider.connection, {
+      getAccountInfo: async (address) => ({
+        owner: tokenProgram,
+        data: address.equals(mint) ? mintData : tokenAccountData,
+      }),
+    });
+
+    await assert.rejects(provider.quote(input), (error) => {
+      assert.equal(error.code, 'PAYOUT_INSUFFICIENT_ONCHAIN_BALANCE');
+      assert.match(error.message, /Saldo BRLP insuficiente/);
+      return true;
+    });
+    assert.equal(requestedPagFinance, false);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -298,6 +358,50 @@ test('ledger rejeita transação desbalanceada antes de tocar no banco', async (
       },
     ),
     ConflictException,
+  );
+});
+
+test('ledger cria contas com conflito na chave contábil idempotente', async () => {
+  let upsertInput;
+  const tx = {
+    orm: {
+      public: {
+        LedgerAccount: {
+          upsert: async (value) => {
+            upsertInput = value;
+            return { id: '44444444-4444-4444-8444-444444444444' };
+          },
+        },
+        LedgerEntry: {
+          where: () => ({ all: async () => [] }),
+        },
+      },
+    },
+  };
+  const service = new LedgerService({});
+
+  const balance = await service.getAvailableBalance(tx, input.userId);
+
+  assert.equal(balance, 0n);
+  assert.deepEqual(upsertInput.conflictOn, {
+    key: `freelancer_balance:${input.userId}:BRLP`,
+  });
+});
+
+test('serviço aplica o status inicial do provider sem repetir submit', () => {
+  const service = new WithdrawalService({}, {}, new MockPayoutProvider());
+
+  assert.equal(
+    service.statusAfterProvider('awaiting_signature', 'submitted'),
+    'submitted',
+  );
+  assert.equal(
+    service.statusAfterProvider('awaiting_signature', 'processing'),
+    'processing',
+  );
+  assert.equal(
+    service.statusAfterProvider('awaiting_signature', 'paid'),
+    'paid',
   );
 });
 

@@ -9,8 +9,6 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMilestoneDto } from './dto/create-milestone.dto';
 import { UpdateMilestoneDto } from './dto/update-milestone.dto';
-import { Prisma } from '@prisma/client/extension';
-
 
 export type Tx = Parameters<
   Parameters<PrismaService['db']['transaction']>[0]
@@ -28,8 +26,7 @@ export class MilestoneService {
     const amountBaseUnits = this.parseAmount(dto.amountBaseUnits);
 
     return this.withDraftProject(projectId, userId, async (tx) => {
-      const lastMilestone = await tx.orm.public.Milestone
-        .where({ projectId })
+      const lastMilestone = await tx.orm.public.Milestone.where({ projectId })
         .select('sequence')
         .orderBy((m) => m.sequence.desc())
         .first();
@@ -54,8 +51,7 @@ export class MilestoneService {
 
   async findAllMilestones(projectId: string, userId: string) {
     return this.withDraftProject(projectId, userId, async (tx) => {
-      const milestones = await tx.orm.public.Milestone
-        .where({ projectId })
+      const milestones = await tx.orm.public.Milestone.where({ projectId })
         .orderBy((m) => m.sequence.asc())
         .all();
 
@@ -86,14 +82,13 @@ export class MilestoneService {
     }
 
     return this.withDraftProject(projectId, userId, async (tx) => {
-      const milestone = await tx.orm.public.Milestone
-        .where({ id: milestoneId, projectId })
-        .update(data);
+      const milestone = await tx.orm.public.Milestone.where({
+        id: milestoneId,
+        projectId,
+      }).update(data);
 
       if (!milestone) {
-        throw new NotFoundException(
-          'Etapa não encontrada neste projeto',
-        );
+        throw new NotFoundException('Etapa não encontrada neste projeto');
       }
 
       return this.toResponse(milestone);
@@ -106,14 +101,13 @@ export class MilestoneService {
     userId: string,
   ) {
     return this.withDraftProject(projectId, userId, async (tx) => {
-      const milestone = await tx.orm.public.Milestone
-        .where({ id: milestoneId, projectId })
-        .delete();
+      const milestone = await tx.orm.public.Milestone.where({
+        id: milestoneId,
+        projectId,
+      }).delete();
 
       if (!milestone) {
-        throw new NotFoundException(
-          'Etapa não encontrada neste projeto',
-        );
+        throw new NotFoundException('Etapa não encontrada neste projeto');
       }
     });
   }
@@ -137,9 +131,9 @@ export class MilestoneService {
 
       await tx.query(lockQuery);
 
-      const project = await tx.orm.public.Project
-        .where({ id: projectId })
-        .first();
+      const project = await tx.orm.public.Project.where({
+        id: projectId,
+      }).first();
 
       if (!project) {
         throw new NotFoundException('Projeto não encontrado');
@@ -186,4 +180,3 @@ export class MilestoneService {
     };
   }
 }
-

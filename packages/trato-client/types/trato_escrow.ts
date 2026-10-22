@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/trato_escrow.json`.
  */
 export type TratoEscrow = {
-  "address": "973yrLGt8Jro3ak66GxTyBXBYens5di54txDxJFGJNxG",
+  "address": "5jqtbGSBvTACNYzjeWFsRnXLYFwZDMZ9qjV8Spt4jgqn",
   "metadata": {
     "name": "tratoEscrow",
     "version": "0.1.0",
@@ -455,7 +455,7 @@ export type TratoEscrow = {
         },
         {
           "name": "program",
-          "address": "973yrLGt8Jro3ak66GxTyBXBYens5di54txDxJFGJNxG"
+          "address": "5jqtbGSBvTACNYzjeWFsRnXLYFwZDMZ9qjV8Spt4jgqn"
         },
         {
           "name": "programData"

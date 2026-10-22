@@ -1,18 +1,11 @@
-import {
-  Injectable,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 
 import { db } from './db';
 
-export type Tx =
-  Parameters<Parameters<typeof db.transaction>[0]>[0];
+export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 @Injectable()
-export class PrismaService
-  implements OnModuleInit, OnModuleDestroy
-{
+export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get db() {
     return db;
   }

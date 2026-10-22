@@ -33,6 +33,38 @@ export const routes: Routes = [
           import('./features/projects/projects.routes').then((routes) => routes.PROJECTS_ROUTES),
       },
       {
+        path: 'balance',
+        loadComponent: () =>
+          import('./features/finance/pages/balance-page.component').then(
+            (page) => page.BalancePageComponent,
+          ),
+        title: 'Saldo e extrato | Trato',
+      },
+      {
+        path: 'withdrawals',
+        loadComponent: () =>
+          import('./features/finance/pages/withdrawal-history-page.component').then(
+            (page) => page.WithdrawalHistoryPageComponent,
+          ),
+        title: 'Histórico de saques | Trato',
+      },
+      {
+        path: 'withdrawals/new',
+        loadComponent: () =>
+          import('./features/finance/pages/withdrawal-page.component').then(
+            (page) => page.WithdrawalPageComponent,
+          ),
+        title: 'Sacar via Pix | Trato',
+      },
+      {
+        path: 'withdrawals/:id',
+        loadComponent: () =>
+          import('./features/finance/pages/withdrawal-status-page.component').then(
+            (page) => page.WithdrawalStatusPageComponent,
+          ),
+        title: 'Status do saque | Trato',
+      },
+      {
         path: 'activity',
         loadComponent: () =>
           import('./features/placeholders/placeholder-page.component').then(

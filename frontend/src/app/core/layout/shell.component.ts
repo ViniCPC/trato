@@ -44,6 +44,22 @@ import { AuthService } from '../auth/auth.service';
           </a>
           <a
             class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-500 transition hover:bg-ink-50 hover:text-ink-900"
+            routerLink="/balance"
+            routerLinkActive="bg-brand-50 !text-brand-900"
+          >
+            <svg class="size-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-9Zm0 2h16m-5 4h2"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Saldo e extrato
+          </a>
+          <a
+            class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-500 transition hover:bg-ink-50 hover:text-ink-900"
             routerLink="/activity"
             routerLinkActive="bg-brand-50 !text-brand-900"
           >
@@ -151,7 +167,7 @@ import { AuthService } from '../auth/auth.service';
       <main class="min-h-screen pb-24 lg:pb-0"><router-outlet /></main>
 
       <nav
-        class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-ink-200 bg-white px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden"
+        class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-ink-200 bg-white px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden"
         aria-label="Navegação mobile"
       >
         <a
@@ -162,6 +178,14 @@ import { AuthService } from '../auth/auth.service';
         >
           <span class="text-lg" aria-hidden="true">□</span>
           Projetos
+        </a>
+        <a
+          class="flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-medium text-ink-500"
+          routerLink="/balance"
+          routerLinkActive="!text-brand-700"
+        >
+          <span class="text-lg" aria-hidden="true">◫</span>
+          Saldo
         </a>
         <a
           class="flex min-h-16 flex-col items-center justify-center gap-1 text-xs font-medium text-ink-500"

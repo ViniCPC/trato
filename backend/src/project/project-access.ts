@@ -1,7 +1,4 @@
-import {
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import type { Tx } from '../prisma/prisma.service';
@@ -25,21 +22,14 @@ export async function lockProjectForUser(
 
   await tx.query(lockQuery);
 
-  const project = await tx.orm.public.Project
-    .where({ id: projectId })
-    .first();
+  const project = await tx.orm.public.Project.where({ id: projectId }).first();
 
   if (!project) {
     throw new NotFoundException('Projeto não encontrado');
   }
 
-  if (
-    project.clientId !== userId &&
-    project.freelancerId !== userId
-  ) {
-    throw new ForbiddenException(
-      'Você não participa deste projeto',
-    );
+  if (project.clientId !== userId && project.freelancerId !== userId) {
+    throw new ForbiddenException('Você não participa deste projeto');
   }
 
   return project;
